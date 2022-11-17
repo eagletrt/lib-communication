@@ -13,6 +13,15 @@
 
 using namespace std;
 
+enum ConnectionState_
+{
+	NONE,
+	CONNECTING,
+	CONNECTED,
+	FAIL,
+	CLOSED
+};
+
 class GenericSocket
 {
 };

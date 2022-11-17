@@ -5,9 +5,9 @@
 #include <mutex>
 #include <string>
 #include <unordered_set>
-#include <websocketpp/client.hpp>
-#include <websocketpp/common/thread.hpp>
-#include <websocketpp/config/asio_no_tls_client.hpp>
+#include "websocketpp/client.hpp"
+#include "websocketpp/common/thread.hpp"
+#include "websocketpp/config/asio_no_tls_client.hpp"
 
 #include "connection.h"
 
@@ -19,15 +19,6 @@ using websocketpp::lib::placeholders::_2;
 typedef websocketpp::config::asio_client::message_type::ptr message_ptr;
 typedef websocketpp::client<websocketpp::config::asio_client> client;
 
-enum ConnectionState_
-{
-	NONE,
-	CONNECTING,
-	CONNECTED,
-	FAIL,
-	CLOSED
-};
-
 #define WS_LOGIN GenericMessage("client", "{\"identifier\":\"client\"}")
 #define WS_COLLECT_PING GenericMessage("server_collect_all_ping", "{\"type\": \"server_collect_all_ping\"}")
 #define WS_GET_PING GenericMessage("server_get_all_ping", "{\"type\": \"server_get_all_ping\"}")
@@ -36,8 +27,6 @@ enum ConnectionState_
 #define WS_TEL_KILL GenericMessage("telemetry_kill", "{\"type\": \"telemetry_kill\"}")
 #define WS_TEL_RESET GenericMessage("telemetry_reset", "{\"type\": \"telemetry_reset\"}")
 #define WS_TEL_GET_CONFIG GenericMessage("telemetry_get_config", "{\"type\":\"telemetry_get_config\"}")
-#define WS_TEL_ACTION_ZIP GenericMessage("telemetry_action_zip_logs", "{\"type\":\"telemetry_action_zip_logs\"}")
-#define WS_TEL_ACTION_ZIP_AND_MOVE GenericMessage("telemetry_action_zip_and_move", "{\"type\":\"telemetry_action_zip_and_move\"}")
 
 class custom_ws_socket
 {

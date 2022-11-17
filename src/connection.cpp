@@ -70,14 +70,14 @@ void Connection::receiveLoop()
             usleep(1000);
             continue;
         }
-        GenericMessage msg;
+        // GenericMessage msg;
 
-        this->receiveMessage(msg);
+        // this->receiveMessage(msg);
 
-        if (onMessage)
-        {
-            onMessage(id, msg);
-        }
+        // if (onMessage)
+        // {
+        //     onMessage(id, msg);
+        // }
     }
 }
 

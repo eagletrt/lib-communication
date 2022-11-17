@@ -8,9 +8,10 @@ WSConnection::WSConnection() : Connection()
 
     // set up access channels to only log interesting things
     socket->m_client.clear_access_channels(websocketpp::log::alevel::all);
-    // socket->m_client.set_access_channels(websocketpp::log::alevel::connect);
-    // socket->m_client.set_access_channels(websocketpp::log::alevel::disconnect);
-    // socket->m_client.set_access_channels(websocketpp::log::alevel::app);
+    socket->m_client.set_access_channels(websocketpp::log::alevel::connect);
+    socket->m_client.set_access_channels(websocketpp::log::alevel::disconnect);
+    socket->m_client.set_access_channels(websocketpp::log::alevel::app);
+    // socket->m_client.set_access_channels(websocketpp::log::alevel::all);
 
     // Initialize the Asio transport policy
     socket->m_client.init_asio();
@@ -48,6 +49,8 @@ thread *WSConnection::start()
     if (port != "")
         server << ":" << port;
 
+    cout << server.str() << endl;
+
     socket->m_conn = socket->m_client.get_connection(server.str(), socket->ec);
 
     if (socket->ec)
@@ -76,7 +79,7 @@ void WSConnection::m_onOpen(websocketpp::connection_hdl)
 
 void WSConnection::m_onClose(websocketpp::connection_hdl conn)
 {
-    onDisconnect(id, 0);
+    onDisconnect(id, socket->m_conn.get()->get_remote_close_code());
 }
 
 void WSConnection::m_onFail(websocketpp::connection_hdl)

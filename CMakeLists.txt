@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 3.16)
 
 project(communication)
 
+if(APPLE)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(Mosquitto IMPORTED_TARGET libmosquitto REQUIRED)
+endif()
+
 find_package(Boost REQUIRED COMPONENTS
     iostreams system
 )
@@ -31,10 +36,17 @@ add_library(
 target_link_libraries(
     ${PROJECT_NAME}
     ${websocketpp}
-    mosquitto
     Boost::iostreams
     Boost::system
 )
+
+if(APPLE)
+target_link_libraries(${PROJECT_NAME} PkgConfig::Mosquitto)
+endif()
+
+if(NOT APPLE)
+    target_link_libraries(${PROJECT_NAME} stdc++fs crypt mosquitto)
+endif()
 
 add_executable(test test/main.cpp)
 

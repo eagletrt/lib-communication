@@ -87,11 +87,11 @@ MQTTConnection::MQTTConnection() : Connection() {
                     err_msg = "Error while initializing: Unknown error";
                     break;
             }
+            if(error_check(errno, err_msg)) {
+                return;
+            }
         }
-        
-        if(error_check(errno, err_msg)) {
-            return;
-        }
+
     }
 
     mqtt_data.inst = this;
@@ -198,9 +198,11 @@ thread* MQTTConnection::start() {
         return nullptr;
     }
 
-    if(openMode == PUB) {
+    if(openMode == PUB)
         telemetry_thread = new thread(&MQTTConnection::sendLoop, this);
-    }
+    else if(openMode == SUB)
+        telemetry_thread = new thread(&MQTTConnection::receiveLoop, this);
+
 
     return telemetry_thread;
 }
@@ -285,7 +287,8 @@ void MQTTConnection::closeConnection() {
 }
 
 int MQTTConnection::subscribe(const string &topic) {
-    int res = mosquitto_subscribe(socket->client, NULL, "home/test", 0);
+    int res = mosquitto_subscribe(socket->client, NULL, topic.c_str(), 0);
+
     string err_msg;
 
     switch(res) {
