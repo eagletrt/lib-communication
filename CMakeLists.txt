@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.16)
 project(communication)
 
 if(APPLE)
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(Mosquitto IMPORTED_TARGET libmosquitto REQUIRED)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(Mosquitto IMPORTED_TARGET libmosquitto REQUIRED)
 endif()
 
 find_package(Boost REQUIRED COMPONENTS
@@ -27,6 +27,14 @@ set(SOURCES
     src/ws_connection.cpp
 )
 
+get_property(DIRS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+
+set(
+    communication_SOURCE_DIRS
+    ${DIRS}
+    PARENT_SCOPE
+)
+
 add_library(
     ${PROJECT_NAME}
     STATIC
@@ -41,7 +49,7 @@ target_link_libraries(
 )
 
 if(APPLE)
-target_link_libraries(${PROJECT_NAME} PkgConfig::Mosquitto)
+    target_link_libraries(${PROJECT_NAME} PkgConfig::Mosquitto)
 endif()
 
 if(NOT APPLE)
@@ -51,4 +59,3 @@ endif()
 add_executable(test test/main.cpp)
 
 target_link_libraries(${PROJECT_NAME})
-
