@@ -15,25 +15,24 @@ add_subdirectory(
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/websocketpp
 )
 
-get_property(DIRS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
-
-set(
-    communication_SOURCE_DIRS
-    ${DIRS}
-    PARENT_SCOPE
-)
-
 include_directories(
   ${websocketpp_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty
   ${CMAKE_CURRENT_SOURCE_DIR}/inc
-  ${DIRS}
 )
 
 set(SOURCES
     src/connection.cpp
     src/mqtt_connection.cpp
     src/ws_connection.cpp
+)
+
+get_property(DIRS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+
+set(
+    communication_SOURCE_DIRS
+    ${DIRS}
+    PARENT_SCOPE
 )
 
 add_library(
