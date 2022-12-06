@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 
 project(communication)
 
+option(TEST "Build test" OFF)
+
 if(APPLE)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(Mosquitto IMPORTED_TARGET libmosquitto REQUIRED)
@@ -56,6 +58,10 @@ if(NOT APPLE)
     target_link_libraries(${PROJECT_NAME} stdc++fs crypt mosquitto)
 endif()
 
-add_executable(test test/main.cpp)
+if(TEST)
+    enable_testing()
+    add_subdirectory(test)
+    add_executable(test test/main.cpp)
 
-target_link_libraries(test ${PROJECT_NAME})
+    target_link_libraries(test ${PROJECT_NAME})
+endif()
