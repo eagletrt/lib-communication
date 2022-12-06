@@ -203,7 +203,6 @@ thread* MQTTConnection::start() {
     else if(openMode == SUB)
         telemetry_thread = new thread(&MQTTConnection::receiveLoop, this);
 
-
     return telemetry_thread;
 }
 
@@ -384,7 +383,7 @@ void MQTTConnection::receiveMessage(GenericMessage &msg) {
 bool MQTTConnection::error_check(const int &res, const string &err_msg) {
     if(res != MOSQ_ERR_SUCCESS) {
         cout << err_msg << endl;
-        mosquitto_destroy(socket->client);
+        // mosquitto_destroy(socket->client);
         if(mqtt_data.clbk_on_error)
             mqtt_data.clbk_on_error(id, res, err_msg);
         return true;
