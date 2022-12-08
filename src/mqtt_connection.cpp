@@ -378,8 +378,10 @@ void MQTTConnection::sendMessage(const GenericMessage &msg) {
 }
 
 void MQTTConnection::receiveMessage(GenericMessage &msg) {
+    cout << "inside receiveMessage" << endl;
     unique_lock<mutex> lck(mtx);
     cv.wait(lck);
+    cout << "exiting receiveMessage" << endl;
 }
 
 bool MQTTConnection::error_check(const int &res, const string &err_msg) {
