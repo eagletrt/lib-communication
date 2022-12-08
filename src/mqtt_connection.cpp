@@ -121,7 +121,7 @@ MQTTConnection::~MQTTConnection() {
 }
 
 thread* MQTTConnection::start() {
-    int res, keepalive = 60, port_int = 1883;
+    int res, keepalive = 10, port_int = 1883;
     string err_msg;
 
     done = false;
@@ -378,6 +378,8 @@ void MQTTConnection::sendMessage(const GenericMessage &msg) {
 }
 
 void MQTTConnection::receiveMessage(GenericMessage &msg) {
+    unique_lock<mutex> lck(mtx);
+    cv.wait(lck);
 }
 
 bool MQTTConnection::error_check(const int &res, const string &err_msg) {
