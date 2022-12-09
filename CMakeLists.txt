@@ -51,7 +51,9 @@ target_link_libraries(
 )
 
 if(APPLE)
-    if(Boost_USE_STATIC_LIBS EQUAL ON)
+    message(STATUS "Boost_USE_STATIC_LIBS: ${Boost_USE_STATIC_LIBS}")
+    if(${Boost_USE_STATIC_LIBS})
+        message(STATUS "Using static boost libraries, including static zstd library")
         find_package(zstd CONFIG REQUIRED)
         target_link_libraries(${PROJECT_NAME} zstd::libzstd_static)
     endif()
