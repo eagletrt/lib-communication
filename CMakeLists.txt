@@ -43,23 +43,24 @@ add_library(
     ${SOURCES}
 )
 
+if(APPLE)
+    message(STATUS "Boost_USE_STATIC_LIBS: ${Boost_USE_STATIC_LIBS}")
+    if(${Boost_USE_STATIC_LIBS})
+        message(STATUS "Using static boost libraries, including static zstd library")
+        find_package(zstd REQUIRED)
+        # message(STATUS "zstd_STATIC_LIB: ${zstd_STATIC_LIB}")
+        target_link_libraries(${PROJECT_NAME} zstd::libzstd_static)
+    endif()
+
+    target_link_libraries(${PROJECT_NAME} PkgConfig::Mosquitto)
+endif()
+
 target_link_libraries(
     ${PROJECT_NAME}
     ${websocketpp}
     Boost::iostreams
     Boost::system
 )
-
-if(APPLE)
-    message(STATUS "Boost_USE_STATIC_LIBS: ${Boost_USE_STATIC_LIBS}")
-    if(${Boost_USE_STATIC_LIBS})
-        message(STATUS "Using static boost libraries, including static zstd library")
-        find_package(zstd CONFIG REQUIRED)
-        target_link_libraries(${PROJECT_NAME} zstd::libzstd_static)
-    endif()
-
-    target_link_libraries(${PROJECT_NAME} PkgConfig::Mosquitto)
-endif()
 
 if(NOT APPLE)
     target_link_libraries(${PROJECT_NAME} stdc++fs crypt mosquitto)
