@@ -51,6 +51,11 @@ target_link_libraries(
 )
 
 if(APPLE)
+    if(Boost_USE_STATIC_LIBS EQUAL ON)
+        find_package(zstd CONFIG REQUIRED)
+        target_link_libraries(${PROJECT_NAME} zstd::libzstd_static)
+    endif()
+
     target_link_libraries(${PROJECT_NAME} PkgConfig::Mosquitto)
 endif()
 
