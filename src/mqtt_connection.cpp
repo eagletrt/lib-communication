@@ -47,51 +47,23 @@ MQTTConnection::MQTTConnection() : Connection() {
     int res;
     string err_msg;
 
-    if(socket->client) {
-        res = mosquitto_reinitialise(socket->client, NULL, true, &mqtt_data);
-
-        switch(res) {
-            case MOSQ_ERR_INVAL:
-                err_msg = "Error while reinitializing: Invalid input parameters";
-                break;
-            case MOSQ_ERR_NOMEM:
-                err_msg = "Error while reinitializing: Out of memory";
-                break;
-            case MOSQ_ERR_MALFORMED_UTF8:
-                err_msg = "Error while reinitializing: Malformed UTF-8";
-                break;
-            case MOSQ_ERR_SUCCESS:
-                break;
-            default:
-                err_msg = "Error while reinitializing: Unknown error";
-                break;
-        }
-
-        if(error_check(res, err_msg)) {
-            return;
-        }
-    }
+    socket->client = mosquitto_new(NULL, true, (void*)&mqtt_data);
 
     if(!socket->client) {
-        socket->client = mosquitto_new(NULL, true, (void*)&mqtt_data);
-
-        if(!socket->client) {
-            switch(errno) {
-                case ENOMEM:
-                    err_msg = "Error while initializing: Out of memory";
-                    break;
-                case EINVAL:
-                    err_msg = "Error while initializing: Invalid input parameters";
-                    break;
-                default:
-                    err_msg = "Error while initializing: Unknown error";
-                    break;
-            }
-            if(error_check(errno, err_msg)) {
-                return;
-            }
+        switch(errno) {
+            case ENOMEM:
+                err_msg = "Error while initializing: Out of memory";
+                break;
+            case EINVAL:
+                err_msg = "Error while initializing: Invalid input parameters";
+                break;
+            default:
+                err_msg = "Error while initializing: Unknown error";
+                break;
         }
-
+        if(error_check(errno, err_msg)) {
+            return;
+        }
     }
 
     mqtt_data.inst = this;
@@ -121,7 +93,7 @@ MQTTConnection::~MQTTConnection() {
 }
 
 thread* MQTTConnection::start() {
-    int res, keepalive = 10, port_int = 1883;
+    int res = MOSQ_ERR_INVAL, keepalive = 10, port_int = 1883;
     string err_msg;
 
     done = false;
@@ -142,25 +114,19 @@ thread* MQTTConnection::start() {
         mosquitto_publish_callback_set(socket->client, on_publish);
     }
 
-    stringstream server;
+    port_int = strtol(port.c_str(), NULL, 10);
+    if((port_int == 0 && errno != 0) || port_int > 65535) {
+        if(onError)
+            onError(id, 0, "Invalid port number");
+        return nullptr;
+    }
     if(address.size() <= 4) {
         if(onError)
             onError(id, 0, "Missing socket address");
         return nullptr;
     }
-
-    try {
-        port_int = stoi(port);
-    } catch(...) {
-        if(onError)
-            onError(id, 0, "Invalid port number");
-        return nullptr;
-    }
-
-    if(address != "" && port_int != 0) {
-        res = mosquitto_connect(socket->client, address.c_str(), port_int, keepalive);
-    }
-
+    
+    res = mosquitto_connect(socket->client, address.c_str(), port_int, keepalive);
     switch(res) {
         case MOSQ_ERR_INVAL:
             err_msg = "Error while connecting: Invalid input parameters";
@@ -179,8 +145,8 @@ thread* MQTTConnection::start() {
         return nullptr;
     }
 
-    int loop = mosquitto_loop_start(socket->client);
-    switch(loop) {
+    res = mosquitto_loop_start(socket->client);
+    switch(res) {
         case MOSQ_ERR_INVAL:
             err_msg = "Error while starting the loop: Invalid input parameters";
             break;
@@ -194,7 +160,7 @@ thread* MQTTConnection::start() {
             break;
     }
 
-    if(error_check(loop, err_msg)) {
+    if(error_check(res, err_msg)) {
         return nullptr;
     }
 
@@ -260,6 +226,7 @@ void MQTTConnection::authenticate() {
 void MQTTConnection::closeConnection() {
     if(open) {
         int res = mosquitto_disconnect(socket->client);
+        mosquitto_loop_stop(socket->client, false);
         string err_msg;
 
         switch(res) {
@@ -280,9 +247,7 @@ void MQTTConnection::closeConnection() {
             return;
         }
     }
-    reset();
-    done = true;
-    cv.notify_all();
+    stop();
 }
 
 int MQTTConnection::subscribe(const string &topic) {
@@ -378,10 +343,8 @@ void MQTTConnection::sendMessage(const GenericMessage &msg) {
 }
 
 void MQTTConnection::receiveMessage(GenericMessage &msg) {
-    cout << "inside receiveMessage" << endl;
     unique_lock<mutex> lck(mtx);
     cv.wait(lck);
-    cout << "exiting receiveMessage" << endl;
 }
 
 bool MQTTConnection::error_check(const int &res, const string &err_msg) {
@@ -408,18 +371,14 @@ void MQTTConnection::m_on_connect(struct mosquitto* client, void* data, int resu
 }
 
 void MQTTConnection::m_on_disconnect(struct mosquitto* client, void* data, int result) {
-    if(onDisconnect)
+    if(onDisconnect){
         onDisconnect(getId(), result);
+    }
 }
 
 void MQTTConnection::m_on_message(struct mosquitto* client, void* data, const struct mosquitto_message* msg) {
     if(onMessage) {
-        GenericMessage message = GenericMessage();
-
-        message.topic = msg->topic;
-        message.payload = (char*) msg->payload;
-
-        onMessage(getId(), message);
+        onMessage(getId(), GenericMessage(msg->topic, (char*) msg->payload));
     }
 }
 

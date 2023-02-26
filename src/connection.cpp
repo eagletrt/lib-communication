@@ -116,11 +116,6 @@ void Connection::stop()
     }
 
     cv.notify_all();
-
-    if (onDisconnect)
-    {
-        onDisconnect(id, 1000);
-    }
 }
 
 void Connection::reset()
