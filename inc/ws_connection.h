@@ -1,5 +1,5 @@
-#ifndef __WS_CONECTION__
-#define __WS_CONECTION__
+#ifndef __WS_CONNECTION__
+#define __WS_CONNECTION__
 
 #include <set>
 #include <mutex>
@@ -27,6 +27,7 @@ typedef websocketpp::client<websocketpp::config::asio_client> client;
 #define WS_TEL_KILL GenericMessage("telemetry_kill", "{\"type\": \"telemetry_kill\"}")
 #define WS_TEL_RESET GenericMessage("telemetry_reset", "{\"type\": \"telemetry_reset\"}")
 #define WS_TEL_GET_CONFIG GenericMessage("telemetry_get_config", "{\"type\":\"telemetry_get_config\"}")
+#define WS_LC_RESET GenericMessage("telemetry_lc_reset", "{\"type\": \"telemetry_lapcounter_reset\"}")
 
 class custom_ws_socket
 {
@@ -65,4 +66,4 @@ private:
 	virtual void receiveMessage(GenericMessage &msg);
 };
 
-#endif // __WS_CONECTION__
+#endif // __WS_CONNECTION__
