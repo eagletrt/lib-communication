@@ -6,7 +6,6 @@
 
 int main()
 {
-    MQTTConnection tmp("sube", "melearadio");
-    std::cout<<tmp.getPendingMessages()<<"\n";
+    
     return 0;
 }
