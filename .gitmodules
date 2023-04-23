@@ -1,3 +1,0 @@
-[submodule "thirdparty/websocketpp"]
-	path = thirdparty/websocketpp
-	url = https://github.com/zaphoyd/websocketpp
