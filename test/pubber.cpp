@@ -41,17 +41,12 @@ int main()
 
     MQTTMessage msg;
     msg.topic = "update_data";
-    msg.payload = "test";
-    conn->queueSend(msg);
 
-    connection.send(msg);
-    connection.subscribe("update_data");
-    connection.send(msg);
-
+    int count = 0;
     while(true){
-        usleep(5e5);
-        msg.payload = "----------";
-        connection.send(msg);
+        usleep(1e6);
+        msg.payload = "test" + std::to_string(++count);
+        conn->send(msg);
     }
 
     connection.libCleanup();
