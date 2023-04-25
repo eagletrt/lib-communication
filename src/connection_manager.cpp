@@ -17,7 +17,7 @@ namespace ConnectionManager{
   static void connectionThreadFunction(){
     connectionThreadRunning = true;
     while(connectionThreadRunning.load()){
-      usleep(1e4);
+      usleep(2e5);
       for(auto connection : connections){
         if(connection->getStatus() == CONNECTED || connection->getStatus() == CONNECTING)
           continue;
