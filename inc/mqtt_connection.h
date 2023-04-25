@@ -2,6 +2,7 @@
 
 #include "connection.h"
 
+#include <atomic>
 #include <mosquitto.h>
 
 class MQTTConnectionParameters : public ConnectionParameters
@@ -19,12 +20,16 @@ public:
 class MQTTMessage : public Message
 {
 public:
+  int qos;
+  bool retain;
   std::string topic;
   std::string payload;
   std::chrono::_V2::system_clock::time_point timestamp;
 
-  MQTTMessage() : Message() {};
-  MQTTMessage(const Message& message) : Message(message) {};
+  MQTTMessage();
+  MQTTMessage(const Message& message);
+  MQTTMessage(const std::string &topic, const std::string &payload);
+  MQTTMessage(const std::string &topic, const std::string &payload, int qos, bool retain);
   ~MQTTMessage() override {};
 };
 
@@ -34,8 +39,7 @@ public:
     MQTTConnection(MQTTConnectionParameters& parameters);
     ~MQTTConnection() override;
 
-    void libInit();
-    void libCleanup();
+    void setConnectionParameters(ConnectionParameters& parameters) override;
 
     void connect() override;
     void disconnect() override;
@@ -48,11 +52,11 @@ public:
     void unsubscribe(const std::string& topic);
 
 private:
+    static int mqttInstances;
+    std::atomic<size_t> queueSize;
+
     struct mosquitto* mosq;
-
-    int version_maj, version_min, version_rev;
-
-    MQTTConnectionParameters* mqtt_parameters;
+    MQTTConnectionParameters* mqttParameters;
 
     void loop() override;
 

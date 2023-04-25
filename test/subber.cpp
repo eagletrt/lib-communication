@@ -2,6 +2,8 @@
 #include "mqtt_connection.h"
 #include <iostream>
 #include <unistd.h>
+#include <chrono>
+#include <ctime>
 
 int main()
 {
@@ -14,7 +16,7 @@ int main()
     };
     OnMessageCallback onMessageCallback = [](void *data, int id, const Message& message) {
         MQTTMessage* msg = (MQTTMessage*)&message;
-        std::cout << msg->topic << ": " << msg->payload << std::endl;
+        std::cout << msg->timestamp.time_since_epoch().count() << " " << msg->topic << ": " << msg->payload << std::endl;
     };
     OnErrorCallback onErrorCallback = [](void *data, int id, const char* error) {
         std::cout << "Error: " << error << std::endl;
@@ -32,21 +34,15 @@ int main()
     conn->setOnErrorCallback(onErrorCallback);
 
     conn->connect();
+    connection.subscribe("update_data");
 
     while(conn->getStatus() == CONNECTING){
         std::cout << "Connecting..." << std::endl;
         usleep(100000);
     }
 
-    MQTTMessage msg;
-    msg.topic = "update_data";
-
     int count = 0;
     while(true){
-        for(int i = 0; i < 1000; i++){
-            msg.payload = "test" + std::to_string(++count);
-            conn->send(msg);
-        }
         usleep(5e6);
     }
     

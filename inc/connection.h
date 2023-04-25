@@ -21,24 +21,25 @@ enum ConnectionStatus{
   CONNECTION_STATUS_COUNT
 };
 
-typedef void (*OnConnectCallback)(int id);
-typedef void (*OnDisconnectCallback)(int id);
-typedef void (*OnMessageCallback)(int id, const Message& message);
-typedef void (*OnErrorCallback)(int id, const char* error);
+typedef void (*OnConnectCallback)(void* userData, int id);
+typedef void (*OnDisconnectCallback)(void* userData, int id);
+typedef void (*OnMessageCallback)(void* userData, int id, const Message& message);
+typedef void (*OnErrorCallback)(void* userData, int id, const char* error);
 
 class Connection{
 public:
     Connection(ConnectionParameters& parameters);
     virtual ~Connection();
 
-    void setConnectionParameters(ConnectionParameters& parameters);
+    virtual void setConnectionParameters(ConnectionParameters& parameters) = 0;
+    void setUserData(void* userData); // used for callbacks
 
     virtual void connect() = 0;
     virtual void disconnect() = 0;
 
-    virtual void send(const Message& message) = 0; // blocking
-    virtual void receive(Message& message) = 0; // blocking
-    virtual void queueSend(const Message& message) = 0; // non-blocking
+    virtual void send(const Message& message) = 0;
+    virtual void receive(Message& message) = 0;
+    virtual void queueSend(const Message& message) = 0;
 
     void setOnConnectCallback(OnConnectCallback callback);
     void setOnDisconnectCallback(OnDisconnectCallback callback);
@@ -50,6 +51,7 @@ public:
 protected:
     static int connectionCount;
     int id;
+    void* userData;
 
     ConnectionParameters* parameters = NULL;
     ConnectionStatus status;

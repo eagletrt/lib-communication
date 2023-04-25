@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(communication)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
@@ -56,4 +56,6 @@ if(TEST)
     target_link_libraries(test_1 ${PROJECT_NAME})
     add_executable(pubber test/pubber.cpp)
     target_link_libraries(pubber ${PROJECT_NAME})
+    add_executable(subber test/subber.cpp)
+    target_link_libraries(subber ${PROJECT_NAME})
 endif()

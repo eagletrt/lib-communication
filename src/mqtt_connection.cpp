@@ -3,28 +3,69 @@
 #include <typeinfo>
 #include <iostream>
 
-MQTTConnection::MQTTConnection(MQTTConnectionParameters& parameters)
-: Connection(parameters) {
-  this->mqtt_parameters = new MQTTConnectionParameters(parameters);
-  this->parameters = this->mqtt_parameters;
-  this->mosq = NULL;
+int MQTTConnection::mqttInstances = 0;
+
+MQTTMessage::MQTTMessage() : Message() {
+  this->qos = 0;
+  this->retain = false;
+};
+MQTTMessage::MQTTMessage(const std::string &topic, const std::string &payload) : Message() {
+  this->topic = topic;
+  this->payload = payload;
+  this->retain = false;
+  this->qos = 0;
+}
+MQTTMessage::MQTTMessage(const std::string &topic, const std::string &payload, int qos, bool retain) : Message() {
+  this->qos = qos;
+  this->retain = retain;
+  this->topic = topic;
+  this->payload = payload;
+}
+MQTTMessage::MQTTMessage(const Message& message) : Message() {
+  if(typeid(message) != typeid(MQTTMessage))
+    return;
+  MQTTMessage* msg = (MQTTMessage*)&message;
+  this->qos = msg->qos;
+  this->retain = msg->retain;
+  this->topic = msg->topic;
+  this->payload = msg->payload;
 }
 
-MQTTConnection::~MQTTConnection() {
-  delete this->parameters;
-}
-
-void MQTTConnection::libInit() {
+void libInit() {
   mosquitto_lib_init();
-  mosquitto_lib_version(&this->version_maj, &this->version_min, &this->version_rev);
 }
 
-void MQTTConnection::libCleanup() {
+void libCleanup() {
   mosquitto_lib_cleanup();
 }
 
-void MQTTConnection::connect()
-{
+MQTTConnection::MQTTConnection(MQTTConnectionParameters& parameters)
+: Connection(parameters) {
+  if(mqttInstances == 0)
+    libInit();
+  mqttInstances ++;
+
+  this->mqttParameters = new MQTTConnectionParameters(parameters);
+  this->parameters = this->mqttParameters;
+  this->mosq = NULL;
+  this->queueSize.store(0);
+}
+
+MQTTConnection::~MQTTConnection() {
+  mqttInstances --;
+  if(mqttInstances == 0)
+    libCleanup();
+  delete this->parameters;
+}
+
+void MQTTConnection::setConnectionParameters(ConnectionParameters& parameters){
+  if(typeid(parameters) != typeid(MQTTConnectionParameters))
+    return;
+  *this->mqttParameters = reinterpret_cast<MQTTConnectionParameters&>(parameters);
+  this->parameters = this->mqttParameters;
+}
+
+void MQTTConnection::connect() {
   if(this->mosq == NULL) {
     this->mosq = mosquitto_new(NULL, true, this);
   } else {
@@ -35,18 +76,18 @@ void MQTTConnection::connect()
 
   if(this->mosq == NULL) {
     this->status = ERROR;
-    this->onErrorCallback(this->id, mosquitto_strerror(errno));
-    this->onErrorCallback(this->id, "Could not create mosquitto instance");
+    this->onErrorCallback(this->userData, this->id, mosquitto_strerror(errno));
+    this->onErrorCallback(this->userData, this->id, "Could not create mosquitto instance");
     return;
   }
 
   this->status = CONNECTING;
-  if(this->mqtt_parameters->username != "" && this->mqtt_parameters->password != "")
-    mosquitto_username_pw_set(this->mosq, this->mqtt_parameters->username.c_str(), this->mqtt_parameters->password.c_str());
-  int ret = mosquitto_connect_async(this->mosq, this->mqtt_parameters->host.c_str(), this->mqtt_parameters->port, 60);
+  if(this->mqttParameters->username != "" && this->mqttParameters->password != "")
+    mosquitto_username_pw_set(this->mosq, this->mqttParameters->username.c_str(), this->mqttParameters->password.c_str());
+  int ret = mosquitto_connect_async(this->mosq, this->mqttParameters->host.c_str(), this->mqttParameters->port, 60);
   if(ret != MOSQ_ERR_SUCCESS) {
     this->status = ERROR;
-    this->onErrorCallback(this->id, "Could not connect to broker");
+    this->onErrorCallback(this->userData, this->id, "Could not connect to broker");
     return;
   }
 
@@ -59,20 +100,32 @@ void MQTTConnection::connect()
 }
 
 void MQTTConnection::disconnect() {
+  mosquitto_disconnect(this->mosq);
+  mosquitto_loop_stop(this->mosq, false);
+  mosquitto_destroy(this->mosq);
+  this->mosq = NULL;
+  this->status = DISCONNECTED;
 }
 
 void MQTTConnection::send(const Message& message) {
   MQTTMessage* mqtt_message = (MQTTMessage*)&message;
-  mosquitto_publish(this->mosq, NULL, mqtt_message->topic.c_str(), mqtt_message->payload.size(), mqtt_message->payload.c_str(), 0, false);
+  mosquitto_publish(
+    this->mosq,
+    NULL,
+    mqtt_message->topic.c_str(),
+    mqtt_message->payload.size(),
+    mqtt_message->payload.c_str(),
+    mqtt_message->qos,
+    mqtt_message->retain
+  );
+  this->queueSize ++;
 }
 
 void MQTTConnection::receive(Message& message) {
 }
 
 void MQTTConnection::queueSend(const Message& message) {
-  std::scoped_lock<std::mutex> lock(this->messageQueueMutex);
-  this->messageQueue.push(new MQTTMessage(message));
-  this->messageQueueCondition.notify_one();
+  send(message);
 }
 
 void MQTTConnection::subscribe(const std::string& topic) {
@@ -84,24 +137,23 @@ void MQTTConnection::unsubscribe(const std::string& topic) {
 }
 
 void MQTTConnection::loop(){
-
 }
 
 void MQTTConnection::on_connect(struct mosquitto* mosq, void* obj, int rc) {
   MQTTConnection* connection = (MQTTConnection*)obj;
   if(rc == 0) {
     connection->status = CONNECTED;
-    connection->onConnectCallback(connection->id);
+    connection->onConnectCallback(connection->userData, connection->id);
   } else {
     connection->status = ERROR;
-    connection->onErrorCallback(connection->id, "Could not connect to broker");
+    connection->onErrorCallback(connection->userData, connection->id, "Could not connect to broker");
   }
 }
 
 void MQTTConnection::on_disconnect(struct mosquitto* mosq, void* obj, int rc) {
   MQTTConnection* connection = (MQTTConnection*)obj;
   connection->status = DISCONNECTED;
-  connection->onDisconnectCallback(connection->id);
+  connection->onDisconnectCallback(connection->userData, connection->id);
 }
 
 void MQTTConnection::on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_message* message) {
@@ -110,11 +162,13 @@ void MQTTConnection::on_message(struct mosquitto* mosq, void* obj, const struct 
   mqtt_message->topic = message->topic;
   mqtt_message->payload = std::string((char*)message->payload, message->payloadlen);
   mqtt_message->timestamp = std::chrono::system_clock::now();
-  connection->onMessageCallback(connection->id, *mqtt_message);
+  connection->onMessageCallback(connection->userData, connection->id, *mqtt_message);
   delete mqtt_message;
 }
 
 void MQTTConnection::on_publish(struct mosquitto* mosq, void* obj, int mid) {
+  MQTTConnection* connection = (MQTTConnection*)obj;
+  connection->queueSize --;
 }
 
 void MQTTConnection::on_subscribe(struct mosquitto* mosq, void* obj, int mid, int qos_count, const int* granted_qos) {

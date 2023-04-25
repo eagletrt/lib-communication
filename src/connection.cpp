@@ -5,6 +5,7 @@ int Connection::connectionCount = 0;
 Connection::Connection(ConnectionParameters& parameters) {
     this->status = DISCONNECTED;
     this->id = connectionCount++;
+    this->userData = NULL;
 }
 
 Connection::~Connection() {
@@ -14,8 +15,8 @@ Connection::~Connection() {
   }
 }
 
-void Connection::setConnectionParameters(ConnectionParameters& parameters) {
-    *this->parameters = parameters;
+void Connection::setUserData(void* userData) {
+    this->userData = userData;
 }
 
 void Connection::setOnConnectCallback(OnConnectCallback callback) {
