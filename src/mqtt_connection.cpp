@@ -182,7 +182,7 @@ void MQTTConnection::on_message(struct mosquitto* mosq, void* obj, const struct 
   mqtt_message->payload = std::string((char*)message->payload, message->payloadlen);
   mqtt_message->timestamp = std::chrono::system_clock::now();
   if(connection->onMessageCallback)
-    connection->onMessageCallback(connection->userData, connection->id, *mqtt_message);
+    connection->onMessageCallback(connection->userData, connection->id, *(Message *)mqtt_message);
   delete mqtt_message;
 }
 

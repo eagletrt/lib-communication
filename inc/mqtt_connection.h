@@ -24,7 +24,7 @@ public:
   bool retain;
   std::string topic;
   std::string payload;
-  std::chrono::_V2::system_clock::time_point timestamp;
+  std::chrono::system_clock::time_point timestamp;
 
   MQTTMessage();
   MQTTMessage(const Message& message);
@@ -51,7 +51,7 @@ public:
     void subscribe(const std::string& topic);
     void unsubscribe(const std::string& topic);
 
-    virtual size_t getQueueSize();
+    size_t getQueueSize() override;
 
 private:
     static int mqttInstances;
