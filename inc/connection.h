@@ -31,15 +31,17 @@ public:
     Connection(ConnectionParameters& parameters);
     virtual ~Connection();
 
+    void setMaxQueueSize(size_t size);
+
     virtual void setConnectionParameters(ConnectionParameters& parameters) = 0;
     void setUserData(void* userData); // used for callbacks
 
     virtual void connect() = 0;
     virtual void disconnect() = 0;
 
-    virtual void send(const Message& message) = 0;
+    virtual bool send(const Message& message) = 0;
     virtual void receive(Message& message) = 0;
-    virtual void queueSend(const Message& message) = 0;
+    virtual bool queueSend(const Message& message) = 0;
 
     void setOnConnectCallback(OnConnectCallback callback);
     void setOnDisconnectCallback(OnDisconnectCallback callback);
@@ -52,6 +54,7 @@ protected:
     static int connectionCount;
     int id;
     void* userData;
+    size_t maxQueueSize;
 
     ConnectionParameters* parameters = NULL;
     ConnectionStatus status;

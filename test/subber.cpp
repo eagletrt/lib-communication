@@ -23,6 +23,7 @@ int main()
     };
 
     MQTTConnectionParameters parameters;
+    parameters.host = "localhost";
     parameters.host = "167.99.136.159";
     parameters.port = 1883;
     MQTTConnection connection(parameters);
@@ -34,7 +35,7 @@ int main()
     conn->setOnErrorCallback(onErrorCallback);
 
     conn->connect();
-    connection.subscribe("update_data");
+    connection.subscribe("test_topic");
 
     while(conn->getStatus() == CONNECTING){
         std::cout << "Connecting..." << std::endl;

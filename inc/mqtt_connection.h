@@ -44,9 +44,9 @@ public:
     void connect() override;
     void disconnect() override;
 
-    void send(const Message& message) override;
+    bool send(const Message& message) override;
     void receive(Message& message) override;
-    void queueSend(const Message& message) override;
+    bool queueSend(const Message& message) override;
 
     void subscribe(const std::string& topic);
     void unsubscribe(const std::string& topic);

@@ -6,6 +6,7 @@ Connection::Connection(ConnectionParameters& parameters) {
     this->status = DISCONNECTED;
     this->id = connectionCount++;
     this->userData = NULL;
+    this->maxQueueSize = 1500;
 }
 
 Connection::~Connection() {
@@ -13,6 +14,10 @@ Connection::~Connection() {
     delete messageQueue.front();
     messageQueue.pop();
   }
+}
+
+void Connection::setMaxQueueSize(size_t size) {
+    this->maxQueueSize = size;
 }
 
 void Connection::setUserData(void* userData) {

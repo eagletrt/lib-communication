@@ -27,6 +27,7 @@ include_directories(
 set(SOURCES
     src/connection.cpp
     src/mqtt_connection.cpp
+    src/connection_manager.cpp
 )
 
 get_property(DIRS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
