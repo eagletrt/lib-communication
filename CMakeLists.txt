@@ -7,7 +7,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 option(TEST "Build test" OFF)
-set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-pthread -O0 -g")
 
 if(APPLE)
     find_package(PkgConfig REQUIRED)
@@ -20,17 +19,17 @@ find_package(Boost REQUIRED COMPONENTS
 
 include_directories(
   ${websocketpp_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty
-  ${CMAKE_CURRENT_SOURCE_DIR}/inc
+  ${CMAKE_CURRENT_LIST_DIR}/thirdparty
+  ${CMAKE_CURRENT_LIST_DIR}/inc
 )
 
 set(SOURCES
-    src/connection.cpp
-    src/mqtt_connection.cpp
-    src/connection_manager.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/connection.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/mqtt_connection.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/connection_manager.cpp
 )
 
-get_property(DIRS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+get_property(DIRS DIRECTORY ${CMAKE_CURRENT_LIST_DIR} PROPERTY INCLUDE_DIRECTORIES)
 
 set(
     communication_SOURCE_DIRS
