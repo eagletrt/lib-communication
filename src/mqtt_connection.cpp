@@ -149,6 +149,10 @@ void MQTTConnection::unsubscribe(const std::string& topic) {
   mosquitto_unsubscribe(this->mosq, NULL, topic.c_str());
 }
 
+size_t MQTTConnection::getQueueSize(){
+  return this->queueSize;
+}
+
 void MQTTConnection::loop(){
 }
 

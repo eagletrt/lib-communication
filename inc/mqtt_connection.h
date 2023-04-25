@@ -51,6 +51,8 @@ public:
     void subscribe(const std::string& topic);
     void unsubscribe(const std::string& topic);
 
+    virtual size_t getQueueSize();
+
 private:
     static int mqttInstances;
     std::atomic<size_t> queueSize;

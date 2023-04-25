@@ -32,6 +32,7 @@ public:
     virtual ~Connection();
 
     void setMaxQueueSize(size_t size);
+    size_t getMaxQueueSize();
 
     virtual void setConnectionParameters(ConnectionParameters& parameters) = 0;
     void setUserData(void* userData); // used for callbacks
@@ -49,6 +50,7 @@ public:
     void setOnErrorCallback(OnErrorCallback callback);
 
     ConnectionStatus getStatus() const;
+    virtual size_t getQueueSize() = 0;
     
 protected:
     static int connectionCount;

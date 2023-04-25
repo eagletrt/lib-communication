@@ -16,6 +16,10 @@ Connection::~Connection() {
   }
 }
 
+size_t Connection::getMaxQueueSize(){
+    return this->maxQueueSize;
+}
+
 void Connection::setMaxQueueSize(size_t size) {
     this->maxQueueSize = size;
 }

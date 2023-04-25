@@ -7,7 +7,6 @@
 
 int main()
 {
-
     OnConnectCallback onConnectCallback = [](void *data, int id) {
         std::cout << "Connected" << std::endl;
     };
