@@ -1,132 +1,74 @@
-// Abstact class to know which function to implement for different connection types
+#pragma once
 
-#ifndef __CONNECTION_H__
-#define __CONNECTION_H__
-
-#include <queue>
 #include <mutex>
-#include <thread>
-#include <string>
-#include <unistd.h>
-#include <functional>
+#include <queue>
 #include <condition_variable>
 
-using namespace std;
-
-enum ConnectionState_
-{
-	NONE,
-	CONNECTING,
-	CONNECTED,
-	FAIL,
-	CLOSED
-};
-
-class GenericSocket
-{
-};
-class GenericMessage
-{
+class Message{
 public:
-    GenericMessage(){
-        topic = "";
-        payload = "";
-    };
-    GenericMessage(const string &topic_, const string &payload_) : topic(topic_), payload(payload_){};
-
-    // use these if in subsub
-    string topic;
-    string payload;
+  virtual ~Message(){};
+};
+class ConnectionParameters{
+public:
+  virtual ~ConnectionParameters(){};
 };
 
-class Connection
-{
+enum ConnectionStatus{
+  CONNECTED = 0,
+  CONNECTING,
+  DISCONNECTED,
+  ERROR,
+  CONNECTION_STATUS_COUNT
+};
+
+typedef void (*OnConnectCallback)(void* userData, int id);
+typedef void (*OnDisconnectCallback)(void* userData, int id);
+typedef void (*OnMessageCallback)(void* userData, int id, const Message& message);
+typedef void (*OnErrorCallback)(void* userData, int id, const char* error);
+
+class Connection{
 public:
-    ~Connection();
-    int getId();
+    Connection(ConnectionParameters& parameters);
+    virtual ~Connection();
 
-    void init(const string &address, const string &port, const int &openMode);
+    void setMaxQueueSize(size_t size);
+    size_t getMaxQueueSize();
 
-    enum
-    {
-        NONE,
-        PUB,
-        SUB
-    };
+    virtual void setConnectionParameters(ConnectionParameters& parameters) = 0;
+    void setUserData(void* userData); // used for callbacks
 
-    struct message
-    {
-        string topic;
-        string payload;
-    };
+    virtual void connect() = 0;
+    virtual void disconnect() = 0;
 
-    virtual void closeConnection() = 0;
-    virtual thread *start() = 0;
+    virtual bool send(const Message& message) = 0;
+    virtual void receive(Message& message) = 0;
+    virtual bool queueSend(const Message& message) = 0;
 
-    virtual int subscribe(const string &topic) = 0;
-    virtual int unsubscribe(const string &topic) = 0;
+    void setOnConnectCallback(OnConnectCallback callback);
+    void setOnDisconnectCallback(OnDisconnectCallback callback);
+    void setOnMessageCallback(OnMessageCallback callback);
+    void setOnErrorCallback(OnErrorCallback callback);
 
-    void clearData();
-    void setData(const GenericMessage &message);
-    inline int getQueueSize(){return max_queue_size - buff_send.size();};
-
-    void addOnConnect(function<void(const int &id)>);
-    void addOnDisconnect(function<void(const int &id, const int &code)>);
-
-    void addOnError(function<void(const int &id, const int &code, const string &msg)>);
-
-    void addOnMessage(function<void(const int &id, const GenericMessage &msg)>);
-    void addOnPublish(function<void(const int &id, const string &topic)>);
-
-    void addOnSubscribe(function<void(const int &id, const string &topic)>);
-    void addOnUnsubscribe(function<void(const int &id, const string &topic)>);
-
-    // ZMQ/RAW_TCP/WEBSOCKET...
-    string GetConnectionType() { return connection_type; };
-
+    ConnectionStatus getStatus() const;
+    virtual size_t getQueueSize() = 0;
+    
 protected:
-    Connection();
-
+    static int connectionCount;
     int id;
-    int max_queue_size;
-    int subscription_count;
+    void* userData;
+    size_t maxQueueSize;
 
-    string port;
-    string address;
-    string connection_type;
-    int openMode;
+    ConnectionParameters* parameters = NULL;
+    ConnectionStatus status;
 
-    bool open = false;
-    bool done = false;
-    bool new_data = false;
+    OnConnectCallback onConnectCallback;
+    OnDisconnectCallback onDisconnectCallback;
+    OnMessageCallback onMessageCallback;
+    OnErrorCallback onErrorCallback;
 
-    mutex mtx;
-    condition_variable cv;
-    queue<GenericMessage> buff_send;
+    std::mutex messageQueueMutex;
+    std::condition_variable messageQueueCondition;
+    std::queue<Message *> messageQueue;
 
-protected:
-    void stop();
-    void reset();
-
-    void sendLoop();
-    void receiveLoop();
-
-    virtual void sendMessage(const GenericMessage &msg) = 0;
-    virtual void receiveMessage(GenericMessage &msg) = 0;
-
-    function<void(const int &id)> onConnect;
-    function<void(const int &id, const int &code)> onDisconnect;
-
-    function<void(const int &id, const int &code, const string &msg)> onError;
-
-    function<void(const int &id, const GenericMessage &msg)> onMessage;
-    function<void(const int &id, const string &topic)> onPublish;
-
-    function<void(const int &id, const string &topic)> onSubscribe;
-    function<void(const int &id, const string &topic)> onUnsubscribe;
-
-private:
-    static int instance_count;
+    virtual void loop() = 0;
 };
-
-#endif

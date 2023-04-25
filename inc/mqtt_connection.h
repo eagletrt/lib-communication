@@ -1,78 +1,71 @@
-#ifndef __MQTT_CONNECTION__
-#define __MQTT_CONNECTION__
-
-#include <set>
-#include <thread>
-
-#include "mosquitto.h"
+#pragma once
 
 #include "connection.h"
 
-using namespace std;
+#include <atomic>
+#include <mosquitto.h>
 
-#define MOSQ_AUTH_FAIL 5
+class MQTTConnectionParameters : public ConnectionParameters
+{
+public:
+  int port;
+  std::string host;
+  std::string username;
+  std::string password;
 
-class custom_mqtt_socket : public GenericSocket {
-    public:
-        mosquitto* client;
-
+  MQTTConnectionParameters() : ConnectionParameters() {};
+  ~MQTTConnectionParameters() override {};
 };
 
-class MQTTConnection;
+class MQTTMessage : public Message
+{
+public:
+  int qos;
+  bool retain;
+  std::string topic;
+  std::string payload;
+  std::chrono::_V2::system_clock::time_point timestamp;
 
-struct MQTTData {
-    MQTTConnection* inst;
-    function<void(struct mosquitto* client, void* data, int result)> clbk_on_connect;
-    function<void(struct mosquitto* client, void* data, int result)> clbk_on_disconnect;
-
-    function<void(struct mosquitto* client, void* data, const struct mosquitto_message* msg)> clbk_on_message;
-    function<void(struct mosquitto* client, void* data, int mid)> clbk_on_publish;
-
-    function<void(struct mosquitto* client, void* data, int mid, int qos_count, const int* granted_qos)> clbk_on_subscribe;
-    function<void(struct mosquitto* client, void* data, int mid)> clbk_on_unsubscribe;
-
-    function<void(const int &id, const int &code, const string &msg)> clbk_on_error;
-
+  MQTTMessage();
+  MQTTMessage(const Message& message);
+  MQTTMessage(const std::string &topic, const std::string &payload);
+  MQTTMessage(const std::string &topic, const std::string &payload, int qos, bool retain);
+  ~MQTTMessage() override {};
 };
 
-class MQTTConnection : public Connection {
-    public:
-        MQTTConnection();
-        MQTTConnection(const string &username, const string &password);
-        ~MQTTConnection();
+class MQTTConnection : public Connection
+{
+public:
+    MQTTConnection(MQTTConnectionParameters& parameters);
+    ~MQTTConnection() override;
 
-        virtual void closeConnection();
-        virtual thread *start();
+    void setConnectionParameters(ConnectionParameters& parameters) override;
 
-        virtual int subscribe(const string &topic);
-        virtual int unsubscribe(const string &topic);
+    void connect() override;
+    void disconnect() override;
 
-        int getPendingMessages();
+    bool send(const Message& message) override;
+    void receive(Message& message) override;
+    bool queueSend(const Message& message) override;
 
-        void reconnect();
+    void subscribe(const std::string& topic);
+    void unsubscribe(const std::string& topic);
 
-    private:
-        int pending_messages;
-        MQTTData mqtt_data;
-        custom_mqtt_socket *socket;
-        string username = "", password = "";
+    virtual size_t getQueueSize();
 
-        thread *telemetry_thread = nullptr;
+private:
+    static int mqttInstances;
+    std::atomic<size_t> queueSize;
 
-        void m_on_connect(struct mosquitto* client, void* data, int result);
-        void m_on_publish(struct mosquitto* client, void* data, int mid);
-        void m_on_disconnect(struct mosquitto* client, void* data, int result);
-        void m_on_message(struct mosquitto* client, void* data, const struct mosquitto_message* msg);
-        void m_on_error(const int &id, const int &code, const string &msg);
-        void m_on_subscribe(struct mosquitto* client, void* data, int mid, int qos_count, const int* granted_qos);
-        void m_on_unsubscribe(struct mosquitto* client, void* data, int mid);
+    struct mosquitto* mosq;
+    MQTTConnectionParameters* mqttParameters;
 
-        bool error_check(const int &res, const string &msg);
+    void loop() override;
 
-        void authenticate();
-
-        virtual void sendMessage(const GenericMessage &msg);
-        virtual void receiveMessage(GenericMessage &msg);
+    static void on_connect(struct mosquitto* mosq, void* obj, int rc);
+    static void on_disconnect(struct mosquitto* mosq, void* obj, int rc);
+    static void on_message(struct mosquitto* mosq, void* obj, const struct mosquitto_message* message);
+    static void on_publish(struct mosquitto* mosq, void* obj, int mid);
+    static void on_subscribe(struct mosquitto* mosq, void* obj, int mid, int qos_count, const int* granted_qos);
+    static void on_unsubscribe(struct mosquitto* mosq, void* obj, int mid);
 };
-
-#endif
