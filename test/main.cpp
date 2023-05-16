@@ -1,34 +1,33 @@
 #include "connection.h"
 #include "mqtt_connection.h"
 #include <iostream>
-#include <unistd.h>
 #include <typeinfo>
+#include <unistd.h>
 
-int main()
-{
+int main() {
 
-    OnConnectCallback onConnectCallback = [](void* data, int id) {
+    OnConnectCallback onConnectCallback = [](void *data, int id) {
         std::cout << "Connected" << std::endl;
     };
-    OnDisconnectCallback onDisconnectCallback = [](void* data, int id) {
+    OnDisconnectCallback onDisconnectCallback = [](void *data, int id) {
         std::cout << "Disconnected" << std::endl;
     };
-    OnMessageCallback onMessageCallback = [](void* data, int id, const Message& message) {
-        MQTTMessage* msg = (MQTTMessage*)&message;
+    OnMessageCallback onMessageCallback = [](void *data, int id, const Message &message) {
+        MQTTMessage *msg = (MQTTMessage *) &message;
         std::cout << msg->topic << ": " << msg->payload << std::endl;
     };
-    OnErrorCallback onErrorCallback = [](void* data, int id, const char* error) {
+    OnErrorCallback onErrorCallback = [](void *data, int id, const char *error) {
         std::cout << "Error: " << error << std::endl;
     };
 
     MQTTConnectionParameters parameters;
-    parameters.host = "167.99.136.159";
+    parameters.host = "leonardopivetta.it";
     parameters.port = 1883;
     MQTTConnection connection(parameters);
 
     Connection *conn = &connection;
 
-    while(true){
+    while (true) {
         conn->setOnConnectCallback(onConnectCallback);
         conn->setOnDisconnectCallback(onDisconnectCallback);
         conn->setOnMessageCallback(onMessageCallback);
@@ -36,12 +35,12 @@ int main()
 
         conn->connect();
 
-        while(conn->getStatus() == CONNECTING){
+        while (conn->getStatus() == CONNECTING) {
             std::cout << "Connecting..." << std::endl;
             usleep(100000);
         }
 
-        if(conn->getStatus() == ERROR || conn->getStatus() == DISCONNECTED){
+        if (conn->getStatus() == ERROR || conn->getStatus() == DISCONNECTED) {
             std::cout << "Error connecting" << std::endl;
             usleep(5e5);
             continue;
@@ -56,7 +55,7 @@ int main()
         connection.subscribe("update_data");
         connection.send(msg);
 
-        for(int i = 0; i < 5; i++){
+        for (int i = 0; i < 5; i++) {
             usleep(5e5);
             MQTTMessage msg("update_data", "test");
             connection.send(msg);
