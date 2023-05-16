@@ -12,6 +12,11 @@ public:
   std::string host;
   std::string username;
   std::string password;
+  bool tls;
+  char* cafile;
+  char* capath;
+  char* certfile;
+  char* keyfile;
 
   MQTTConnectionParameters() : ConnectionParameters() {};
   ~MQTTConnectionParameters() override {};

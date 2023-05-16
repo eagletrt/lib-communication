@@ -75,6 +75,7 @@ void MQTTConnection::setConnectionParameters(ConnectionParameters& parameters){
 
 void MQTTConnection::connect() {
   this->status = CONNECTING;
+  int ret;
   
   if(this->mosq == NULL) {
     this->mosq = mosquitto_new(NULL, true, this);
@@ -82,16 +83,53 @@ void MQTTConnection::connect() {
     mosquitto_reinitialise(this->mosq, NULL, true, this);
   }
 
-  mosquitto_loop_start(this->mosq);
-
   if(this->mosq == NULL) {
     this->status = ERROR;
+    MQTT_ERROR(this, MOSQ_ERR_NOMEM, "Error creating mosquitto instance: ")
     return;
   }
 
-  if(this->mqttParameters->username != "" && this->mqttParameters->password != "")
-    mosquitto_username_pw_set(this->mosq, this->mqttParameters->username.c_str(), this->mqttParameters->password.c_str());
-  int ret = mosquitto_connect_async(this->mosq, this->mqttParameters->host.c_str(), this->mqttParameters->port, 60);
+  // ret = mosquitto_tls_opts_set(this->mosq, 1, "tls1.3", NULL);
+  // if(ret != MOSQ_ERR_SUCCESS) {
+  //   this->status = ERROR;
+  //   MQTT_ERROR(this, ret, "TLS opts: ")
+  //   return;
+  // }
+
+  if(this->mqttParameters->username != "" && this->mqttParameters->password != ""){
+    ret = mosquitto_username_pw_set(this->mosq, this->mqttParameters->username.c_str(), this->mqttParameters->password.c_str());
+    if(ret != MOSQ_ERR_SUCCESS) {
+      this->status = ERROR;
+      MQTT_ERROR(this, ret, "Error setting username and password: ")
+      return;
+    }
+  }
+
+
+  if(this->mqttParameters->tls){
+    ret = mosquitto_tls_set(this->mosq, this->mqttParameters->cafile, this->mqttParameters->capath, this->mqttParameters->certfile, this->mqttParameters->keyfile, NULL);
+    if(ret != MOSQ_ERR_SUCCESS) {
+      this->status = ERROR;
+      MQTT_ERROR(this, ret, "Error setting tls: ")
+      return;
+    }
+
+    ret = mosquitto_tls_insecure_set(this->mosq, false);
+    if(ret != MOSQ_ERR_SUCCESS) {
+      this->status = ERROR;
+      MQTT_ERROR(this, ret, "Setting TLS: ")
+      return;
+    }
+  }
+
+  ret = mosquitto_loop_start(this->mosq);
+  if(ret != MOSQ_ERR_SUCCESS) {
+    this->status = ERROR;
+    MQTT_ERROR(this, ret, "Error starting mosquitto loop: ")
+    return;
+  }
+
+  ret = mosquitto_connect_async(this->mosq, this->mqttParameters->host.c_str(), this->mqttParameters->port, 60);
   if(ret != MOSQ_ERR_SUCCESS) {
     this->status = ERROR;
     MQTT_ERROR(this, ret, "Error connecting to broker: ")
