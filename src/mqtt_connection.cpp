@@ -107,7 +107,7 @@ void MQTTConnection::connect() {
 
 
     if (this->mqttParameters->tls) {
-        ret = mosquitto_tls_set(this->mosq, this->mqttParameters->cafile.c_str(), this->mqttParameters->capath.c_str(), this->mqttParameters->certfile.c_str(), this->mqttParameters->keyfile.c_str(), nullptr);
+        ret = mosquitto_tls_set(this->mosq, this->mqttParameters->cafile.c_str(), nullptr, nullptr, nullptr, nullptr);
         if (ret != MOSQ_ERR_SUCCESS) {
             this->status = ERROR;
             MQTT_ERROR(this, ret, "Error setting tls: ")
