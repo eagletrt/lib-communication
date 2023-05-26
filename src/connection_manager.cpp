@@ -19,7 +19,7 @@ namespace ConnectionManager{
     while(connectionThreadRunning.load()){
       usleep(2e5);
       for(auto connection : connections){
-        if(connection->getStatus() == CONNECTED || connection->getStatus() == CONNECTING)
+        if(connection->getStatus() == CONNECTION_STATUS_CONNECTED || connection->getStatus() == CONNECTION_STATUS_CONNECTING)
           continue;
         connection->connect();
       }

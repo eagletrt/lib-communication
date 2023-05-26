@@ -3,7 +3,7 @@
 int Connection::connectionCount = 0;
 
 Connection::Connection(ConnectionParameters& parameters) {
-    this->status = DISCONNECTED;
+    this->status = CONNECTION_STATUS_DISCONNECTED;
     this->id = connectionCount++;
     this->userData = NULL;
     this->maxQueueSize = 1500;

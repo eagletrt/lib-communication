@@ -74,7 +74,7 @@ void MQTTConnection::setConnectionParameters(ConnectionParameters &parameters) {
 }
 
 void MQTTConnection::connect() {
-    this->status = CONNECTING;
+    this->status = CONNECTION_STATUS_CONNECTING;
     int ret;
 
     if (this->mosq == NULL) {
@@ -84,7 +84,7 @@ void MQTTConnection::connect() {
     }
 
     if (this->mosq == NULL) {
-        this->status = ERROR;
+        this->status = CONNECTION_STATUS_ERROR;
         MQTT_ERROR(this, MOSQ_ERR_NOMEM, "Error creating mosquitto instance: ")
         return;
     }
@@ -99,7 +99,7 @@ void MQTTConnection::connect() {
     if (this->mqttParameters->username != "" && this->mqttParameters->password != "") {
         ret = mosquitto_username_pw_set(this->mosq, this->mqttParameters->username.c_str(), this->mqttParameters->password.c_str());
         if (ret != MOSQ_ERR_SUCCESS) {
-            this->status = ERROR;
+            this->status = CONNECTION_STATUS_ERROR;
             MQTT_ERROR(this, ret, "Error setting username and password: ")
             return;
         }
@@ -107,16 +107,21 @@ void MQTTConnection::connect() {
 
 
     if (this->mqttParameters->tls) {
-        ret = mosquitto_tls_set(this->mosq, this->mqttParameters->cafile.c_str(), nullptr, nullptr, nullptr, nullptr);
+        ret = mosquitto_tls_set(this->mosq,
+            this->mqttParameters->cafile.empty()   ? nullptr : this->mqttParameters->cafile.c_str(),
+            this->mqttParameters->capath.empty()   ? nullptr : this->mqttParameters->capath.c_str(),
+            this->mqttParameters->certfile.empty() ? nullptr : this->mqttParameters->certfile.c_str(),
+            this->mqttParameters->keyfile.empty()  ? nullptr : this->mqttParameters->keyfile.c_str(),
+            nullptr);
         if (ret != MOSQ_ERR_SUCCESS) {
-            this->status = ERROR;
+            this->status = CONNECTION_STATUS_ERROR;
             MQTT_ERROR(this, ret, "Error setting tls: ")
             return;
         }
 
         ret = mosquitto_tls_insecure_set(this->mosq, false);
         if (ret != MOSQ_ERR_SUCCESS) {
-            this->status = ERROR;
+            this->status = CONNECTION_STATUS_ERROR;
             MQTT_ERROR(this, ret, "Setting TLS: ")
             return;
         }
@@ -124,14 +129,14 @@ void MQTTConnection::connect() {
 
     ret = mosquitto_loop_start(this->mosq);
     if (ret != MOSQ_ERR_SUCCESS) {
-        this->status = ERROR;
+        this->status = CONNECTION_STATUS_ERROR;
         MQTT_ERROR(this, ret, "Error starting mosquitto loop: ")
         return;
     }
 
     ret = mosquitto_connect_async(this->mosq, this->mqttParameters->host.c_str(), this->mqttParameters->port, 60);
     if (ret != MOSQ_ERR_SUCCESS) {
-        this->status = ERROR;
+        this->status = CONNECTION_STATUS_ERROR;
         MQTT_ERROR(this, ret, "Error connecting to broker: ")
         return;
     }
@@ -149,7 +154,7 @@ void MQTTConnection::disconnect() {
     mosquitto_loop_stop(this->mosq, false);
     mosquitto_destroy(this->mosq);
     this->mosq = NULL;
-    this->status = DISCONNECTED;
+    this->status = CONNECTION_STATUS_DISCONNECTED;
 }
 
 bool MQTTConnection::send(const Message &message) {
@@ -196,18 +201,18 @@ void MQTTConnection::loop() {
 void MQTTConnection::on_connect(struct mosquitto *mosq, void *obj, int rc) {
     MQTTConnection *connection = (MQTTConnection *) obj;
     if (rc == 0) {
-        connection->status = CONNECTED;
+        connection->status = CONNECTION_STATUS_CONNECTED;
         if (connection->onConnectCallback)
             connection->onConnectCallback(connection->userData, connection->id);
     } else {
-        connection->status = ERROR;
+        connection->status = CONNECTION_STATUS_ERROR;
         MQTT_ERROR(connection, rc, "Error on_connect: ")
     }
 }
 
 void MQTTConnection::on_disconnect(struct mosquitto *mosq, void *obj, int rc) {
     MQTTConnection *connection = (MQTTConnection *) obj;
-    connection->status = DISCONNECTED;
+    connection->status = CONNECTION_STATUS_DISCONNECTED;
     if (connection->onDisconnectCallback)
         connection->onDisconnectCallback(connection->userData, connection->id);
 }
