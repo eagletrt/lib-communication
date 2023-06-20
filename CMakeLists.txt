@@ -13,12 +13,7 @@ if(APPLE)
     pkg_check_modules(Mosquitto IMPORTED_TARGET libmosquitto REQUIRED)
 endif()
 
-find_package(Boost REQUIRED COMPONENTS
-    iostreams system
-)
-
 include_directories(
-  ${websocketpp_SOURCE_DIR}
   ${CMAKE_CURRENT_LIST_DIR}/thirdparty
   ${CMAKE_CURRENT_LIST_DIR}/inc
 )
