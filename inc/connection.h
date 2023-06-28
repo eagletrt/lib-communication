@@ -33,6 +33,7 @@ public:
 
     void setMaxQueueSize(size_t size);
     size_t getMaxQueueSize();
+    int getInstanceID() { return id; };
 
     virtual void setConnectionParameters(ConnectionParameters& parameters) = 0;
     void setUserData(void* userData); // used for callbacks
