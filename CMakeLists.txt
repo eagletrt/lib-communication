@@ -42,6 +42,10 @@ target_link_libraries(
     ${PROJECT_NAME}
 )
 
+if (APPLE)
+    target_link_libraries(${PROJECT_NAME} PkgConfig::Mosquitto)
+endif ()
+
 if(NOT APPLE)
     target_link_libraries(${PROJECT_NAME} mosquitto)
 endif()
