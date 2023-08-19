@@ -89,13 +89,6 @@ void MQTTConnection::connect() {
         return;
     }
 
-    // ret = mosquitto_tls_opts_set(this->mosq, 1, "tls1.3", NULL);
-    // if(ret != MOSQ_ERR_SUCCESS) {
-    //   this->status = ERROR;
-    //   MQTT_ERROR(this, ret, "TLS opts: ")
-    //   return;
-    // }
-
     if (this->mqttParameters->username != "" && this->mqttParameters->password != "") {
         ret = mosquitto_username_pw_set(this->mosq, this->mqttParameters->username.c_str(), this->mqttParameters->password.c_str());
         if (ret != MOSQ_ERR_SUCCESS) {
@@ -134,7 +127,7 @@ void MQTTConnection::connect() {
         return;
     }
 
-    ret = mosquitto_connect_async(this->mosq, this->mqttParameters->host.c_str(), this->mqttParameters->port, 60);
+    ret = mosquitto_connect_async(this->mosq, this->mqttParameters->host.c_str(), this->mqttParameters->port, 5);
     if (ret != MOSQ_ERR_SUCCESS) {
         this->status = CONNECTION_STATUS_ERROR;
         MQTT_ERROR(this, ret, "Error connecting to broker: ")
@@ -219,13 +212,12 @@ void MQTTConnection::on_disconnect(struct mosquitto *mosq, void *obj, int rc) {
 
 void MQTTConnection::on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message) {
     MQTTConnection *connection = (MQTTConnection *) obj;
-    MQTTMessage *mqtt_message = new MQTTMessage();
-    mqtt_message->topic = message->topic;
-    mqtt_message->payload = std::string((char *) message->payload, message->payloadlen);
-    mqtt_message->timestamp = std::chrono::system_clock::now();
+    MQTTMessage mqtt_message;
+    mqtt_message.topic = message->topic;
+    mqtt_message.payload = std::string((char *) message->payload, message->payloadlen);
+    mqtt_message.timestamp = std::chrono::system_clock::now();
     if (connection->onMessageCallback)
-        connection->onMessageCallback(connection->userData, connection->id, *(Message *) mqtt_message);
-    delete mqtt_message;
+        connection->onMessageCallback(connection->userData, connection->id, mqtt_message);
 }
 
 void MQTTConnection::on_publish(struct mosquitto *mosq, void *obj, int mid) {
