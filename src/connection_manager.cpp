@@ -5,7 +5,6 @@
 #include <condition_variable>
 #include <vector>
 #include <atomic>
-#include <unistd.h>
 
 namespace ConnectionManager{
   std::vector<Connection*> connections;
@@ -17,7 +16,7 @@ namespace ConnectionManager{
   static void connectionThreadFunction(){
     connectionThreadRunning = true;
     while(connectionThreadRunning.load()){
-      usleep(2e5);
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
       for(auto connection : connections){
         if(connection->getStatus() == CONNECTION_STATUS_CONNECTED || connection->getStatus() == CONNECTION_STATUS_CONNECTING)
           continue;

@@ -144,7 +144,7 @@ void MQTTConnection::connect() {
 
 void MQTTConnection::disconnect() {
     mosquitto_disconnect(this->mosq);
-    mosquitto_loop_stop(this->mosq, false);
+    mosquitto_loop_stop(this->mosq, true);
     mosquitto_destroy(this->mosq);
     this->mosq = NULL;
     this->status = CONNECTION_STATUS_DISCONNECTED;
