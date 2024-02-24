@@ -40,6 +40,7 @@ class MQTTConnection : public Connection {
 public:
     explicit MQTTConnection();
     explicit MQTTConnection(const MQTTConnectionParameters &parameters);
+    MQTTConnection(MQTTConnection &&);
     ~MQTTConnection() override;
 
     void setConnectionParameters(const ConnectionParameters &parameters) override;

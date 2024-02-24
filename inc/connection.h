@@ -30,6 +30,7 @@ class Connection{
 public:
     Connection();
     Connection(const ConnectionParameters& parameters);
+    Connection(Connection &&);
     virtual ~Connection();
 
     void setMaxQueueSize(size_t size);
