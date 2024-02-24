@@ -28,14 +28,15 @@ typedef void (*OnErrorCallback)(void* userData, int id, const char* error);
 
 class Connection{
 public:
-    Connection(ConnectionParameters& parameters);
+    Connection();
+    Connection(const ConnectionParameters& parameters);
     virtual ~Connection();
 
     void setMaxQueueSize(size_t size);
     size_t getMaxQueueSize();
     int getInstanceID() { return id; };
 
-    virtual void setConnectionParameters(ConnectionParameters& parameters) = 0;
+    virtual void setConnectionParameters(const ConnectionParameters& parameters) = 0;
     void setUserData(void* userData); // used for callbacks
 
     virtual void connect() = 0;
@@ -59,7 +60,7 @@ protected:
     void* userData;
     size_t maxQueueSize;
 
-    ConnectionParameters* parameters = NULL;
+    ConnectionParameters parameters;
     ConnectionStatus status;
 
     OnConnectCallback onConnectCallback;

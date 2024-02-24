@@ -1,7 +1,5 @@
 #include "mqtt_connection.h"
 
-#include <iostream>
-#include <typeinfo>
 
 int MQTTConnection::mqttInstances = 0;
 
@@ -47,125 +45,123 @@ void libCleanup() {
     mosquitto_lib_cleanup();
 }
 
-MQTTConnection::MQTTConnection(MQTTConnectionParameters &parameters)
-    : Connection(parameters) {
+MQTTConnection::MQTTConnection(): MQTTConnection(MQTTConnectionParameters()) {}
+MQTTConnection::MQTTConnection(const MQTTConnectionParameters &parameters_): Connection(parameters_) {
     if (mqttInstances == 0)
         libInit();
     mqttInstances++;
 
-    this->mqttParameters = new MQTTConnectionParameters(parameters);
-    this->parameters = this->mqttParameters;
-    this->mosq = NULL;
-    this->queueSize.store(0);
+    mqttParameters = parameters_;
+    parameters = mqttParameters;
+    mosq = NULL;
+    queueSize.store(0);
 }
 
 MQTTConnection::~MQTTConnection() {
     mqttInstances--;
     if (mqttInstances == 0)
         libCleanup();
-    delete this->parameters;
 }
 
-void MQTTConnection::setConnectionParameters(ConnectionParameters &parameters) {
-    if (typeid(parameters) != typeid(MQTTConnectionParameters))
+void MQTTConnection::setConnectionParameters(const ConnectionParameters &parameters_) {
+    if (typeid(parameters_) != typeid(MQTTConnectionParameters))
         return;
-    *this->mqttParameters = reinterpret_cast<MQTTConnectionParameters &>(parameters);
-    this->parameters = this->mqttParameters;
+    mqttParameters = reinterpret_cast<const MQTTConnectionParameters &>(parameters_);
+    parameters = mqttParameters;
 }
 
 void MQTTConnection::connect() {
-    this->status = CONNECTION_STATUS_CONNECTING;
+    status = CONNECTION_STATUS_CONNECTING;
     int ret;
 
-    if (this->mosq == NULL) {
-        this->mosq = mosquitto_new(NULL, true, this);
-    } else {
+    if (mosq) {
         mosquitto_reinitialise(this->mosq, NULL, true, this);
+    } else {
+        mosq = mosquitto_new(NULL, true, this);
     }
 
-    if (this->mosq == NULL) {
-        this->status = CONNECTION_STATUS_ERROR;
+    if (!mosq) {
+        status = CONNECTION_STATUS_ERROR;
         MQTT_ERROR(this, MOSQ_ERR_NOMEM, "Error creating mosquitto instance: ")
         return;
     }
 
-    if (this->mqttParameters->username != "" && this->mqttParameters->password != "") {
-        ret = mosquitto_username_pw_set(this->mosq, this->mqttParameters->username.c_str(), this->mqttParameters->password.c_str());
+    if (!mqttParameters.username.empty() && !mqttParameters.password.empty()) {
+        ret = mosquitto_username_pw_set(mosq, mqttParameters.username.c_str(), mqttParameters.password.c_str());
         if (ret != MOSQ_ERR_SUCCESS) {
-            this->status = CONNECTION_STATUS_ERROR;
+            status = CONNECTION_STATUS_ERROR;
             MQTT_ERROR(this, ret, "Error setting username and password: ")
             return;
         }
     }
 
-
-    if (this->mqttParameters->tls) {
-        ret = mosquitto_tls_set(this->mosq,
-            this->mqttParameters->cafile.empty()   ? nullptr : this->mqttParameters->cafile.c_str(),
-            this->mqttParameters->capath.empty()   ? nullptr : this->mqttParameters->capath.c_str(),
-            this->mqttParameters->certfile.empty() ? nullptr : this->mqttParameters->certfile.c_str(),
-            this->mqttParameters->keyfile.empty()  ? nullptr : this->mqttParameters->keyfile.c_str(),
+    if (mqttParameters.tls) {
+        ret = mosquitto_tls_set(mosq,
+            mqttParameters.cafile.empty()   ? nullptr : mqttParameters.cafile.c_str(),
+            mqttParameters.capath.empty()   ? nullptr : mqttParameters.capath.c_str(),
+            mqttParameters.certfile.empty() ? nullptr : mqttParameters.certfile.c_str(),
+            mqttParameters.keyfile.empty()  ? nullptr : mqttParameters.keyfile.c_str(),
             nullptr);
-        if (ret != MOSQ_ERR_SUCCESS) {
-            this->status = CONNECTION_STATUS_ERROR;
+        if (ret) {
+            status = CONNECTION_STATUS_ERROR;
             MQTT_ERROR(this, ret, "Error setting tls: ")
             return;
         }
 
-        ret = mosquitto_tls_insecure_set(this->mosq, false);
-        if (ret != MOSQ_ERR_SUCCESS) {
-            this->status = CONNECTION_STATUS_ERROR;
+        ret = mosquitto_tls_insecure_set(mosq, false);
+        if (ret) {
+            status = CONNECTION_STATUS_ERROR;
             MQTT_ERROR(this, ret, "Setting TLS: ")
             return;
         }
     }
 
-    ret = mosquitto_loop_start(this->mosq);
-    if (ret != MOSQ_ERR_SUCCESS) {
-        this->status = CONNECTION_STATUS_ERROR;
+    ret = mosquitto_loop_start(mosq);
+    if (ret) {
+        status = CONNECTION_STATUS_ERROR;
         MQTT_ERROR(this, ret, "Error starting mosquitto loop: ")
         return;
     }
 
-    ret = mosquitto_connect_async(this->mosq, this->mqttParameters->host.c_str(), this->mqttParameters->port, 5);
-    if (ret != MOSQ_ERR_SUCCESS) {
-        this->status = CONNECTION_STATUS_ERROR;
+    ret = mosquitto_connect_async(mosq, mqttParameters.host.c_str(), mqttParameters.port, 5);
+    if (ret) {
+        status = CONNECTION_STATUS_ERROR;
         MQTT_ERROR(this, ret, "Error connecting to broker: ")
         return;
     }
 
-    mosquitto_connect_callback_set(this->mosq, MQTTConnection::on_connect);
-    mosquitto_disconnect_callback_set(this->mosq, MQTTConnection::on_disconnect);
-    mosquitto_message_callback_set(this->mosq, MQTTConnection::on_message);
-    mosquitto_publish_callback_set(this->mosq, MQTTConnection::on_publish);
-    mosquitto_subscribe_callback_set(this->mosq, MQTTConnection::on_subscribe);
-    mosquitto_unsubscribe_callback_set(this->mosq, MQTTConnection::on_unsubscribe);
+    mosquitto_connect_callback_set(mosq, MQTTConnection::on_connect);
+    mosquitto_disconnect_callback_set(mosq, MQTTConnection::on_disconnect);
+    mosquitto_message_callback_set(mosq, MQTTConnection::on_message);
+    mosquitto_publish_callback_set(mosq, MQTTConnection::on_publish);
+    mosquitto_subscribe_callback_set(mosq, MQTTConnection::on_subscribe);
+    mosquitto_unsubscribe_callback_set(mosq, MQTTConnection::on_unsubscribe);
 }
 
 void MQTTConnection::disconnect() {
-    mosquitto_disconnect(this->mosq);
-    mosquitto_loop_stop(this->mosq, true);
-    mosquitto_destroy(this->mosq);
-    this->mosq = NULL;
-    this->status = CONNECTION_STATUS_DISCONNECTED;
+    mosquitto_disconnect(mosq);
+    mosquitto_loop_stop(mosq, true);
+    mosquitto_destroy(mosq);
+    mosq = nullptr;
+    status = CONNECTION_STATUS_DISCONNECTED;
 }
 
 bool MQTTConnection::send(const Message &message) {
     if (typeid(message) != typeid(MQTTMessage))
         return false;
-    if (this->queueSize.load() >= this->maxQueueSize)
+    if (queueSize.load() >= maxQueueSize)
         return false;
 
     MQTTMessage *mqtt_message = (MQTTMessage *) &message;
     mosquitto_publish(
-            this->mosq,
+            mosq,
             NULL,
             mqtt_message->topic.c_str(),
             mqtt_message->payload.size(),
             mqtt_message->payload.c_str(),
             mqtt_message->qos,
             mqtt_message->retain);
-    this->queueSize++;
+    queueSize++;
     return true;
 }
 
@@ -177,15 +173,15 @@ bool MQTTConnection::queueSend(const Message &message) {
 }
 
 void MQTTConnection::subscribe(const std::string &topic) {
-    mosquitto_subscribe(this->mosq, NULL, topic.c_str(), 0);
+    mosquitto_subscribe(mosq, NULL, topic.c_str(), 0);
 }
 
 void MQTTConnection::unsubscribe(const std::string &topic) {
-    mosquitto_unsubscribe(this->mosq, NULL, topic.c_str());
+    mosquitto_unsubscribe(mosq, NULL, topic.c_str());
 }
 
 size_t MQTTConnection::getQueueSize() {
-    return this->queueSize;
+    return queueSize;
 }
 
 void MQTTConnection::loop() {

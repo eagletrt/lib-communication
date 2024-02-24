@@ -2,11 +2,13 @@
 
 int Connection::connectionCount = 0;
 
-Connection::Connection(ConnectionParameters& parameters) {
+Connection::Connection() : Connection(ConnectionParameters()) {}
+Connection::Connection(const ConnectionParameters& parameters) {
     this->status = CONNECTION_STATUS_DISCONNECTED;
     this->id = connectionCount++;
     this->userData = NULL;
     this->maxQueueSize = 1500;
+    this->parameters = parameters;
 }
 
 Connection::~Connection() {

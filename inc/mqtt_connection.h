@@ -38,10 +38,11 @@ public:
 
 class MQTTConnection : public Connection {
 public:
-    explicit MQTTConnection(MQTTConnectionParameters &parameters);
+    explicit MQTTConnection();
+    explicit MQTTConnection(const MQTTConnectionParameters &parameters);
     ~MQTTConnection() override;
 
-    void setConnectionParameters(ConnectionParameters &parameters) override;
+    void setConnectionParameters(const ConnectionParameters &parameters) override;
 
     void connect() override;
     void disconnect() override;
@@ -60,7 +61,7 @@ private:
     std::atomic<size_t> queueSize;
 
     struct mosquitto *mosq;
-    MQTTConnectionParameters *mqttParameters;
+    MQTTConnectionParameters mqttParameters;
 
     void loop() override;
 
