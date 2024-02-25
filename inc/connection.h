@@ -4,74 +4,75 @@
 #include <queue>
 #include <condition_variable>
 
-class Message{
+class Message {
 public:
-  virtual ~Message(){};
+	virtual ~Message(){};
 };
-class ConnectionParameters{
+class ConnectionParameters {
 public:
-  virtual ~ConnectionParameters(){};
-};
-
-enum ConnectionStatus{
-  CONNECTION_STATUS_CONNECTED = 0,
-  CONNECTION_STATUS_CONNECTING,
-  CONNECTION_STATUS_DISCONNECTED,
-  CONNECTION_STATUS_ERROR,
-  CONNECTION_STATUS_COUNT
+	virtual ~ConnectionParameters(){};
 };
 
-typedef void (*OnConnectCallback)(void* userData, int id);
-typedef void (*OnDisconnectCallback)(void* userData, int id);
-typedef void (*OnMessageCallback)(void* userData, int id, const Message& message);
-typedef void (*OnErrorCallback)(void* userData, int id, const char* error);
+enum ConnectionStatus {
+	CONNECTION_STATUS_CONNECTED = 0,
+	CONNECTION_STATUS_CONNECTING,
+	CONNECTION_STATUS_DISCONNECTED,
+	CONNECTION_STATUS_ERROR,
+	CONNECTION_STATUS_COUNT
+};
 
-class Connection{
+typedef void (*OnConnectCallback)(void *userData, int id);
+typedef void (*OnDisconnectCallback)(void *userData, int id);
+typedef void (*OnMessageCallback)(void *userData, int id, const Message &message);
+typedef void (*OnErrorCallback)(void *userData, int id, const char *error);
+
+class Connection {
 public:
-    Connection();
-    Connection(const ConnectionParameters& parameters);
-    Connection(Connection &&);
-    virtual ~Connection();
+	Connection();
+	Connection(const ConnectionParameters &parameters);
+	Connection(Connection &&);
+	virtual ~Connection();
 
-    void setMaxQueueSize(size_t size);
-    size_t getMaxQueueSize();
-    int getInstanceID() { return id; };
+	void setMaxQueueSize(size_t size);
+	size_t getMaxQueueSize();
+	int getInstanceID() { return id; };
 
-    virtual void setConnectionParameters(const ConnectionParameters& parameters) = 0;
-    void setUserData(void* userData); // used for callbacks
+	virtual void setConnectionParameters(const ConnectionParameters &parameters) = 0;
+	const ConnectionParameters &getConnectionParameters() const { return parameters; };
+	void setUserData(void *userData); // used for callbacks
 
-    virtual void connect() = 0;
-    virtual void disconnect() = 0;
+	virtual void connect() = 0;
+	virtual void disconnect() = 0;
 
-    virtual bool send(const Message& message) = 0;
-    virtual void receive(Message& message) = 0;
-    virtual bool queueSend(const Message& message) = 0;
+	virtual bool send(const Message &message) = 0;
+	virtual void receive(Message &message) = 0;
+	virtual bool queueSend(const Message &message) = 0;
 
-    void setOnConnectCallback(OnConnectCallback callback);
-    void setOnDisconnectCallback(OnDisconnectCallback callback);
-    void setOnMessageCallback(OnMessageCallback callback);
-    void setOnErrorCallback(OnErrorCallback callback);
+	void setOnConnectCallback(OnConnectCallback callback);
+	void setOnDisconnectCallback(OnDisconnectCallback callback);
+	void setOnMessageCallback(OnMessageCallback callback);
+	void setOnErrorCallback(OnErrorCallback callback);
 
-    ConnectionStatus getStatus() const;
-    virtual size_t getQueueSize() = 0;
-    
+	ConnectionStatus getStatus() const;
+	virtual size_t getQueueSize() = 0;
+
 protected:
-    static int connectionCount;
-    int id;
-    void* userData;
-    size_t maxQueueSize;
+	static int connectionCount;
+	int id;
+	void *userData;
+	size_t maxQueueSize;
 
-    ConnectionParameters parameters;
-    ConnectionStatus status;
+	ConnectionParameters parameters;
+	ConnectionStatus status;
 
-    OnConnectCallback onConnectCallback;
-    OnDisconnectCallback onDisconnectCallback;
-    OnMessageCallback onMessageCallback;
-    OnErrorCallback onErrorCallback;
+	OnConnectCallback onConnectCallback;
+	OnDisconnectCallback onDisconnectCallback;
+	OnMessageCallback onMessageCallback;
+	OnErrorCallback onErrorCallback;
 
-    std::mutex messageQueueMutex;
-    std::condition_variable messageQueueCondition;
-    std::queue<Message *> messageQueue;
+	std::mutex messageQueueMutex;
+	std::condition_variable messageQueueCondition;
+	std::queue<Message *> messageQueue;
 
-    virtual void loop() = 0;
+	virtual void loop() = 0;
 };
