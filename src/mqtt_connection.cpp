@@ -1,5 +1,8 @@
 #include "mqtt_connection.h"
+#include <iostream>
+#include <mosquitto.h>
 #include <mutex>
+#include <string>
 
 int MQTTConnection::mqttInstances = 0;
 
@@ -117,8 +120,26 @@ void MQTTConnection::connect() {
 		}
 	}
 
+  if (mqttParameters.will_message_set) {
+    ret = mosquitto_will_set(
+      mosq,
+      mqttParameters.will.topic.c_str(),
+      mqttParameters.will.payload.size(),
+      mqttParameters.will.payload.c_str(),
+      mqttParameters.will.qos,
+      mqttParameters.will.retain
+    );
+
+    if (ret) {
+      status = CONNECTION_STATUS_ERROR;
+      MQTT_ERROR(this, ret, "Error setting will message: ")
+      return;
+    }
+  }
+
 	ret = mosquitto_loop_start(mosq);
 	if (ret) {
+    std::cout << "Error connecting to broker: " << ret << std::endl;
 		status = CONNECTION_STATUS_ERROR;
 		MQTT_ERROR(this, ret, "Error starting mosquitto loop: ")
 		return;
@@ -141,7 +162,7 @@ void MQTTConnection::connect() {
 
 void MQTTConnection::disconnect() {
 	mosquitto_disconnect(mosq);
-	mosquitto_loop_stop(mosq, true);
+	mosquitto_loop_stop(mosq, false);
 	mosquitto_destroy(mosq);
 	mosq = nullptr;
 	status = CONNECTION_STATUS_DISCONNECTED;
@@ -209,3 +230,130 @@ void MQTTConnection::on_publish(struct mosquitto *mosq, void *obj, int mid) {
 void MQTTConnection::on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, const int *granted_qos) {}
 
 void MQTTConnection::on_unsubscribe(struct mosquitto *mosq, void *obj, int mid) {}
+
+MQTTConnectionParametersBuilder::MQTTConnectionParametersBuilder() {
+  parameters = MQTTConnectionParameters::get_default();
+}
+
+MQTTConnectionParametersBuilder 
+&MQTTConnectionParametersBuilder::host(
+  const std::string &host
+) {
+  parameters.host = host;
+  return *this;
+}
+
+MQTTConnectionParametersBuilder
+&MQTTConnectionParametersBuilder::port(
+  int port
+) {
+  parameters.port = port;
+  return *this;
+}
+
+MQTTConnectionParametersBuilder
+&MQTTConnectionParametersBuilder::username(
+  const std::string &username
+) {
+  parameters.username = username;
+  return *this;
+}
+
+MQTTConnectionParametersBuilder
+&MQTTConnectionParametersBuilder::password(
+  const std::string &password
+) {
+  parameters.password = password;
+  return *this;
+}
+
+MQTTConnectionParametersBuilder
+&MQTTConnectionParametersBuilder::cafile(
+  const std::string &cafile
+) {
+  parameters.cafile = cafile;
+  return *this;
+}
+
+MQTTConnectionParametersBuilder
+&MQTTConnectionParametersBuilder::capath(
+  const std::string &capath
+) {
+  parameters.capath = capath;
+  return *this;
+}
+
+MQTTConnectionParametersBuilder
+&MQTTConnectionParametersBuilder::tls(
+  bool tls
+) {
+  parameters.tls = tls;
+  return *this;
+}
+
+MQTTConnectionParametersBuilder
+&MQTTConnectionParametersBuilder::certfile(
+  const std::string &certfile
+) {
+  parameters.certfile = certfile;
+  return *this;
+}
+
+MQTTConnectionParametersBuilder
+&MQTTConnectionParametersBuilder::keyfile(
+  const std::string &keyfile
+) {
+  parameters.keyfile = keyfile;
+  return *this;
+}
+
+MQTTConnectionParametersBuilder
+&MQTTConnectionParametersBuilder::will(
+  const MQTTMessage &will
+) {
+  parameters.will_message_set = true;
+  parameters.will = will;
+  return *this;
+}
+
+MQTTConnectionParameters
+MQTTConnectionParametersBuilder::build() {
+  return parameters;
+}
+
+MQTTConnectionParameters MQTTConnectionParameters::get_default() {
+  MQTTConnectionParameters parameters;
+  parameters.host = "localhost",
+  parameters.port = 1883,
+  parameters.tls = false;
+  return parameters;
+}
+
+MQTTMessageBuilder::MQTTMessageBuilder() {
+  message = MQTTMessage();
+}
+
+MQTTMessageBuilder& MQTTMessageBuilder::topic(const std::string &topic) {
+  message.topic = topic;
+  return *this;
+}
+
+MQTTMessageBuilder& MQTTMessageBuilder::payload(const std::string &payload) {
+  message.payload = payload;
+  return *this;
+}
+
+MQTTMessageBuilder& MQTTMessageBuilder::qos(int qos) {
+  message.qos = qos;
+  return *this;
+}
+
+MQTTMessageBuilder& MQTTMessageBuilder::retain(bool retain) {
+  message.retain = retain;
+  return *this;
+}
+
+MQTTMessage MQTTMessageBuilder::build() {
+  return message;
+}
+

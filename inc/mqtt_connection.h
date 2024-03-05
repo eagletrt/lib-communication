@@ -5,22 +5,6 @@
 #include <atomic>
 #include <mosquitto.h>
 
-class MQTTConnectionParameters : public ConnectionParameters {
-public:
-	int port;
-	std::string host;
-	std::string username;
-	std::string password;
-	bool tls;
-	std::string cafile;
-	std::string capath;
-	std::string certfile;
-	std::string keyfile;
-
-	MQTTConnectionParameters() : ConnectionParameters(){};
-	~MQTTConnectionParameters() override = default;
-};
-
 class MQTTMessage : public Message {
 public:
 	int qos;
@@ -34,6 +18,26 @@ public:
 	MQTTMessage(const std::string &topic, const std::string &payload);
 	MQTTMessage(const std::string &topic, const std::string &payload, int qos, bool retain);
 	~MQTTMessage() override = default;
+};
+
+class MQTTConnectionParameters : public ConnectionParameters {
+public:
+	int port;
+	std::string host;
+	std::string username;
+	std::string password;
+	bool tls;
+	std::string cafile;
+	std::string capath;
+	std::string certfile;
+	std::string keyfile;
+  bool will_message_set;
+  MQTTMessage will;
+
+	MQTTConnectionParameters() : ConnectionParameters(){};
+	~MQTTConnectionParameters() override = default;
+
+  static MQTTConnectionParameters get_default();
 };
 
 class MQTTConnection : public Connection {
@@ -73,4 +77,43 @@ private:
 	static void on_publish(struct mosquitto *mosq, void *obj, int mid);
 	static void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, const int *granted_qos);
 	static void on_unsubscribe(struct mosquitto *mosq, void *obj, int mid);
+
+  static void throw_error(const int err);
 };
+
+class MQTTMessageBuilder {
+private:
+  MQTTMessage message;
+public:
+  MQTTMessageBuilder();
+  ~MQTTMessageBuilder() = default;
+
+  MQTTMessageBuilder &topic(const std::string &topic);
+  MQTTMessageBuilder &payload(const std::string &payload);
+  MQTTMessageBuilder &qos(int qos);
+  MQTTMessageBuilder &retain(bool retain);
+
+  MQTTMessage build();
+};
+
+class MQTTConnectionParametersBuilder {
+private:
+  MQTTConnectionParameters parameters;
+public:
+  MQTTConnectionParametersBuilder();
+  ~MQTTConnectionParametersBuilder() = default;
+
+  MQTTConnectionParametersBuilder &host(const std::string &host);
+  MQTTConnectionParametersBuilder &port(int port);
+  MQTTConnectionParametersBuilder &username(const std::string &username);
+  MQTTConnectionParametersBuilder &password(const std::string &password);
+  MQTTConnectionParametersBuilder &tls(bool tls);
+  MQTTConnectionParametersBuilder &cafile(const std::string &cafile);
+  MQTTConnectionParametersBuilder &capath(const std::string &capath);
+  MQTTConnectionParametersBuilder &certfile(const std::string &certfile);
+  MQTTConnectionParametersBuilder &keyfile(const std::string &keyfile);
+  MQTTConnectionParametersBuilder &will(const MQTTMessage &will);
+
+  MQTTConnectionParameters build();
+};
+

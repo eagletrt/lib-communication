@@ -35,7 +35,7 @@ int main() {
     conn->connect();
     connection.subscribe("test_topic");
 
-    while (conn->getStatus() == CONNECTING) {
+    while (conn->getStatus() == CONNECTION_STATUS_CONNECTING) {
         std::cout << "Connecting..." << std::endl;
         usleep(100000);
     }

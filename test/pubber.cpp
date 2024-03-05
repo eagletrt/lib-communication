@@ -51,12 +51,12 @@ int main() {
     ConnectionManager::start();
     usleep(1e5);
 
-    while (conn1->getStatus() == CONNECTING) {
+    while (conn1->getStatus() == CONNECTION_STATUS_CONNECTING) {
         std::cout << "1 Connecting..." << std::endl;
         usleep(100000);
     }
 
-    while (conn2->getStatus() == CONNECTING) {
+    while (conn2->getStatus() == CONNECTION_STATUS_CONNECTING) {
         std::cout << "2 Connecting..." << std::endl;
         usleep(100000);
     }
