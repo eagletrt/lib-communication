@@ -33,3 +33,6 @@
 
 build/
 .vscode/
+compile_commands.json
+.cache/clangd/index
+out/Debug

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <mutex>
 #include <queue>
 #include <condition_variable>
@@ -26,6 +27,7 @@ typedef void (*OnDisconnectCallback)(void *userData, int id);
 typedef void (*OnMessageCallback)(void *userData, int id, const Message &message);
 typedef void (*OnErrorCallback)(void *userData, int id, const char *error);
 
+template <class UserDataType>
 class Connection {
 public:
 	Connection();
@@ -39,7 +41,7 @@ public:
 
 	virtual void setConnectionParameters(const ConnectionParameters &parameters) = 0;
 	const ConnectionParameters &getConnectionParameters() const { return parameters; };
-	void setUserData(void *userData); // used for callbacks
+	void setUserData(UserDataType userData); // used for callbacks
 
 	virtual void connect() = 0;
 	virtual void disconnect() = 0;
@@ -59,7 +61,7 @@ public:
 protected:
 	static int connectionCount;
 	int id;
-	void *userData;
+  std::unique_ptr<UserDataType> userData;
 	size_t maxQueueSize;
 
 	ConnectionParameters parameters;
