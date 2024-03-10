@@ -182,6 +182,7 @@ void MQTTConnection::disconnect() {
 bool MQTTConnection::send(const Message &message) {
   if (typeid(message) != typeid(MQTTMessage)) return false;
   if (queueSize.load() >= maxQueueSize) return false;
+  if (!mosq) return false;
 
   MQTTMessage *mqtt_message = (MQTTMessage *)&message;
   mosquitto_publish(mosq, NULL, mqtt_message->topic.c_str(),
