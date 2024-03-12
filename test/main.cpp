@@ -8,6 +8,13 @@ int main() {
 
     OnConnectCallback onConnectCallback = [](void *data, int id) {
         std::cout << "Connected" << std::endl;
+        MQTTConnection *conn = (MQTTConnection *) data;
+
+        conn->send(MQTTMessageBuilder()
+            .topic("$status")
+            .payload("connected")
+            .build()
+        );
     };
     OnDisconnectCallback onDisconnectCallback = [](void *data, int id) {
         std::cout << "Disconnected" << std::endl;
@@ -22,19 +29,15 @@ int main() {
 
     MQTTConnectionParameters parameters = MQTTConnectionParametersBuilder()
         .host("localhost")
-        // .host("broker.emqx.io")
-        // .port(1883)
-        // .tls(false)
         .will(MQTTMessageBuilder()
-            .topic("sesso")
-            .payload("gay")
-            // .qos(1)
-            // .retain(true)
+            .topic("$status")
+            .payload("crashed")
             .build()
         )
         .build();
 
     MQTTConnection connection(parameters);
+    connection.setUserData(&connection);
 
     Connection *conn = &connection;
 
@@ -63,26 +66,14 @@ int main() {
         }
 
         sleep(5);
-        conn->disconnect();
 
-        // MQTTMessage msg;
-        // msg.topic = "sesso";
-        // msg.payload = "anale";
-        // conn->queueSend(msg);
-        //
-        // connection.send(msg);
-        // connection.subscribe("sesso");
-        // connection.send(msg);
-        //
-        // for (int i = 0; i < 5; i++) {
-        //     usleep(5e5);
-        //     MQTTMessage msg("update_data", "test");
-        //     connection.send(msg);
-        // }
-        // conn->disconnect();
-        // parameters.port = 8883;
-        // conn->setConnectionParameters(parameters);
-        // usleep(5e5);
+        conn->send(MQTTMessageBuilder()
+            .topic("$status")
+            .payload("disconnected")
+            .build()
+        );
+
+        conn->disconnect();
     }
 
     return 0;
