@@ -45,6 +45,7 @@ public:
 	explicit MQTTConnection();
 	explicit MQTTConnection(const MQTTConnectionParameters &parameters);
 	MQTTConnection(MQTTConnection &&);
+	MQTTConnection &operator=(MQTTConnection &&);
 	~MQTTConnection() override;
 
 	void setConnectionParameters(const ConnectionParameters &parameters) override;

@@ -66,6 +66,15 @@ MQTTConnection::MQTTConnection(MQTTConnection &&other)
   // Set the moved-from object's mosq to nullptr to prevent double deletion
   other.mosq = nullptr;
 }
+MQTTConnection &MQTTConnection::operator=(MQTTConnection &&other) {
+  if (this != &other) {
+    mosq = other.mosq;
+    mqttParameters = std::move(other.mqttParameters);
+    queueSize = other.queueSize.load();
+    other.mosq = nullptr;
+  }
+  return *this;
+}
 MQTTConnection::~MQTTConnection() {
   disconnect();
   mqttInstances--;
