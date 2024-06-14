@@ -8,7 +8,7 @@
 
 namespace ConnectionManager {
 std::vector<Connection*> connections;
-std::thread* connectionThread = NULL;
+std::unique_ptr<std::thread> connectionThread = NULL;
 std::mutex connectionMutex;
 std::condition_variable connectionCondition;
 std::atomic<bool> connectionThreadRunning = false;
@@ -29,7 +29,7 @@ static void connectionThreadFunction() {
 
 void start() {
   if (connectionThreadRunning) return;
-  connectionThread = new std::thread(connectionThreadFunction);
+  connectionThread = std::make_unique<std::thread>(connectionThreadFunction);
 }
 
 void stop() {
