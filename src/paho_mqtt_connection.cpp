@@ -75,6 +75,9 @@ void PAHOMQTTConnection::disconnect() {
 };
 
 bool PAHOMQTTConnection::send(const PAHOMQTTMessage &message) {
+  if (!cli->is_connected()) {
+    return false;
+  }
   cli->publish((mqtt::message_ptr)message);
   return true;
 };
@@ -127,7 +130,6 @@ PAHOMQTTConnectionStatus PAHOMQTTConnection::getStatus() const {
   return status;
 };
 void PAHOMQTTConnection::on_failure(const mqtt::token &tok) {
-  printf("Failure\n");
   if (onErrorCallback) {
     onErrorCallback(this, userData, tok);
   }
@@ -145,9 +147,7 @@ void PAHOMQTTConnection::connection_lost(const std::string &cause) {
     onDisconnectCallback(this, userData);
   }
 };
-void PAHOMQTTConnection::delivery_complete(mqtt::delivery_token_ptr token) {
-  printf("Delivery complete\n");
-};
+void PAHOMQTTConnection::delivery_complete(mqtt::delivery_token_ptr token) {};
 void PAHOMQTTConnection::message_arrived(mqtt::const_message_ptr msg) {
   if (onMessageCallback) {
     onMessageCallback(this, userData, PAHOMQTTMessage(msg));
