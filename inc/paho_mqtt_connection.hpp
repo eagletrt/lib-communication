@@ -99,11 +99,8 @@ class PAHOMQTTConnection : public virtual mqtt::callback,
 
   PAHOMQTTConnectionStatus getStatus() const;
 
-  void subscribe(const std::string &topic);
+  void subscribe(const std::string &topic, int qos = 0);
   void unsubscribe(const std::string &topic);
-  void unsubscribeAll();
-  void subscribeMultiple(const std::vector<std::string> &topics);
-  void unsubscribeMultiple(const std::vector<std::string> &topics);
 
   void setUserData(void *userData);
   void setOnConnectCallback(on_connect_callback callback);

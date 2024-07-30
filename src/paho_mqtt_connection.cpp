@@ -95,26 +95,11 @@ void PAHOMQTTConnection::setWillMessage(const PAHOMQTTMessage &message) {
 };
 void PAHOMQTTConnection::disableWillMessage() { will = PAHOMQTTMessage(); };
 
-void PAHOMQTTConnection::subscribe(const std::string &topic) {
-  cli->subscribe(topic, 0);
+void PAHOMQTTConnection::subscribe(const std::string &topic, int qos) {
+  cli->subscribe(topic, qos);
 }
 void PAHOMQTTConnection::unsubscribe(const std::string &topic) {
   cli->unsubscribe(topic);
-}
-void PAHOMQTTConnection::unsubscribeAll() {
-  assert(false && "Not implemented");
-}
-void PAHOMQTTConnection::subscribeMultiple(
-    const std::vector<std::string> &topics) {
-  for (const auto &topic : topics) {
-    cli->subscribe(topic, 0);
-  }
-}
-void PAHOMQTTConnection::unsubscribeMultiple(
-    const std::vector<std::string> &topics) {
-  for (const auto &topic : topics) {
-    cli->unsubscribe(topic);
-  }
 }
 
 void PAHOMQTTConnection::setUserData(void *userData) {
