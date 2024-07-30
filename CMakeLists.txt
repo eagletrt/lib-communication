@@ -16,11 +16,19 @@ endif()
 include_directories(
   ${CMAKE_CURRENT_LIST_DIR}/thirdparty
   ${CMAKE_CURRENT_LIST_DIR}/inc
+  ${CMAKE_CURRENT_LIST_DIR}/external/paho/include
 )
+
+set(PAHO_WITH_SSL ON)
+set(PAHO_ENABLE_TESTING OFF)
+set(PAHO_HIGH_PERFORMANCE ON)
+option(PAHO_WITH_MQTT_C "Build Paho C from the internal GIT submodule." TRUE)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/paho)
 
 set(SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/src/connection.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/mqtt_connection.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/paho_mqtt_connection.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/connection_manager.cpp
 )
 
@@ -40,14 +48,17 @@ add_library(
 
 target_link_libraries(
     ${PROJECT_NAME}
+    PUBLIC
+    paho-mqttpp3
+    paho-mqtt3c
 )
 
 if (APPLE)
-    target_link_libraries(${PROJECT_NAME} PkgConfig::Mosquitto)
+    target_link_libraries(${PROJECT_NAME} PUBLIC PkgConfig::Mosquitto)
 endif ()
 
 if(NOT APPLE)
-    target_link_libraries(${PROJECT_NAME} mosquitto)
+    target_link_libraries(${PROJECT_NAME} PUBLIC mosquitto)
 endif()
 
 if(TEST)
@@ -57,4 +68,6 @@ if(TEST)
     target_link_libraries(pubber ${PROJECT_NAME} pthread)
     add_executable(subber test/subber.cpp)
     target_link_libraries(subber ${PROJECT_NAME} pthread)
+    add_executable(paho_test test/paho_test.cpp)
+    target_link_libraries(paho_test ${PROJECT_NAME})
 endif()
