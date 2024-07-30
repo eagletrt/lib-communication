@@ -10,19 +10,19 @@
 
 class PAHOMQTTConnection;
 
-class PHAOMQTTMessage {
+class PAHOMQTTMessage {
  public:
-  PHAOMQTTMessage();
-  ~PHAOMQTTMessage() = default;
-  PHAOMQTTMessage(const mqtt::message_ptr &msg)
-      : PHAOMQTTMessage(msg->get_topic(), msg->to_string(), msg->get_qos(),
+  PAHOMQTTMessage();
+  ~PAHOMQTTMessage() = default;
+  PAHOMQTTMessage(const mqtt::message_ptr &msg)
+      : PAHOMQTTMessage(msg->get_topic(), msg->to_string(), msg->get_qos(),
                         msg->is_retained()) {};
-  PHAOMQTTMessage(const mqtt::const_message_ptr &msg)
-      : PHAOMQTTMessage(msg->get_topic(), msg->to_string(), msg->get_qos(),
+  PAHOMQTTMessage(const mqtt::const_message_ptr &msg)
+      : PAHOMQTTMessage(msg->get_topic(), msg->to_string(), msg->get_qos(),
                         msg->is_retained()) {};
-  PHAOMQTTMessage(const PHAOMQTTMessage &other) = default;
-  PHAOMQTTMessage(const std::string &topic, const std::string &payload);
-  PHAOMQTTMessage(const std::string &topic, const std::string &payload, int qos,
+  PAHOMQTTMessage(const PAHOMQTTMessage &other) = default;
+  PAHOMQTTMessage(const std::string &topic, const std::string &payload);
+  PAHOMQTTMessage(const std::string &topic, const std::string &payload, int qos,
                   bool retain);
 
   explicit operator mqtt::message_ptr() const {
@@ -71,7 +71,7 @@ typedef void (*on_disconnect_callback)(PAHOMQTTConnection *connection,
                                        void *userData);
 typedef void (*on_message_callback)(PAHOMQTTConnection *connection,
                                     void *userData,
-                                    const PHAOMQTTMessage &message);
+                                    const PAHOMQTTMessage &message);
 typedef void (*on_error_callback)(PAHOMQTTConnection *connection,
                                   void *userData, const mqtt::token &tok);
 
@@ -80,7 +80,10 @@ class PAHOMQTTConnection : public virtual mqtt::callback,
  public:
   PAHOMQTTConnection();
   PAHOMQTTConnection(const PAHOMQTTConnectionParameters &parameters);
+  PAHOMQTTConnection(const PAHOMQTTConnection &other) = default;
   ~PAHOMQTTConnection();
+
+  int getID() const;
 
   void setConnectionParameters(const PAHOMQTTConnectionParameters &parameters);
   const PAHOMQTTConnectionParameters &getMQTTConnectionParameters() const;
@@ -88,9 +91,9 @@ class PAHOMQTTConnection : public virtual mqtt::callback,
   void connect();
   void disconnect();
 
-  bool send(const PHAOMQTTMessage &message);
+  bool send(const PAHOMQTTMessage &message);
 
-  void setWillMessage(const PHAOMQTTMessage &message);
+  void setWillMessage(const PAHOMQTTMessage &message);
   void disableWillMessage();
 
   PAHOMQTTConnectionStatus getStatus() const;
@@ -108,12 +111,14 @@ class PAHOMQTTConnection : public virtual mqtt::callback,
   void setOnErrorCallback(on_error_callback callback);
 
  private:
+  int id;
+  static int instanceCounter;
   PAHOMQTTConnectionStatus status;
 
-  PHAOMQTTMessage will;
+  PAHOMQTTMessage will;
   PAHOMQTTConnectionParameters mqttParameters;
 
-  std::queue<PHAOMQTTMessage> sendQueue;
+  std::queue<PAHOMQTTMessage> sendQueue;
 
   void *userData;
   on_connect_callback onConnectCallback;
@@ -122,7 +127,7 @@ class PAHOMQTTConnection : public virtual mqtt::callback,
   on_error_callback onErrorCallback;
 
   // paho
-  std::unique_ptr<mqtt::async_client> cli;
+  std::shared_ptr<mqtt::async_client> cli;
 
  private:
   void on_failure(const mqtt::token &tok) override;

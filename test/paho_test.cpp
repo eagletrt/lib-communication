@@ -9,9 +9,9 @@ int main(void) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
-  connection.setWillMessage(PHAOMQTTMessage("test", "last will"));
+  connection.setWillMessage(PAHOMQTTMessage("test", "last will"));
 
-  connection.send(PHAOMQTTMessage("test", "test"));
+  connection.send(PAHOMQTTMessage("test", "test"));
   connection.subscribe("rec");
 
   connection.setOnConnectCallback(
@@ -24,7 +24,7 @@ int main(void) {
       });
   connection.setOnMessageCallback([](PAHOMQTTConnection *connection,
                                      void *userData,
-                                     const PHAOMQTTMessage &message) {
+                                     const PAHOMQTTMessage &message) {
     std::cout << "Message received: " << message.getTopic() << " "
               << message.getPayload() << std::endl;
   });

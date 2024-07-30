@@ -4,11 +4,13 @@
 
 #include "mqtt/async_client.h"
 
-PHAOMQTTMessage::PHAOMQTTMessage() : PHAOMQTTMessage("", "", 0, false) {};
-PHAOMQTTMessage::PHAOMQTTMessage(const std::string &topic,
+int PAHOMQTTConnection::instanceCounter = 0;
+
+PAHOMQTTMessage::PAHOMQTTMessage() : PAHOMQTTMessage("", "", 0, false) {};
+PAHOMQTTMessage::PAHOMQTTMessage(const std::string &topic,
                                  const std::string &payload)
-    : PHAOMQTTMessage(topic, payload, 0, false) {};
-PHAOMQTTMessage::PHAOMQTTMessage(const std::string &topic,
+    : PAHOMQTTMessage(topic, payload, 0, false) {};
+PAHOMQTTMessage::PAHOMQTTMessage(const std::string &topic,
                                  const std::string &payload, int qos,
                                  bool retain)
     : topic(topic), payload(payload), qos(qos), retain(retain) {};
@@ -36,8 +38,13 @@ PAHOMQTTConnection::PAHOMQTTConnection()
 PAHOMQTTConnection::PAHOMQTTConnection(
     const PAHOMQTTConnectionParameters &parameters)
     : status(PAHOMQTTConnectionStatus::DISCONNECTED),
-      mqttParameters(parameters) {};
+      mqttParameters(parameters) {
+  instanceCounter++;
+  id = instanceCounter;
+};
 PAHOMQTTConnection::~PAHOMQTTConnection() {};
+
+int PAHOMQTTConnection::getID() const { return id; }
 
 void PAHOMQTTConnection::setConnectionParameters(
     const PAHOMQTTConnectionParameters &parameters) {
@@ -50,7 +57,7 @@ PAHOMQTTConnection::getMQTTConnectionParameters() const {
 
 void PAHOMQTTConnection::connect() {
   status = PAHOMQTTConnectionStatus::CONNECTING;
-  cli = std::make_unique<mqtt::async_client>(
+  cli = std::make_shared<mqtt::async_client>(
       mqttParameters.uri, "tmp-id", mqtt::create_options(MQTTVERSION_5));
   mqtt::connect_options connOpts;
   connOpts.set_clean_session(true);
@@ -67,15 +74,15 @@ void PAHOMQTTConnection::disconnect() {
   status = PAHOMQTTConnectionStatus::DISCONNECTED;
 };
 
-bool PAHOMQTTConnection::send(const PHAOMQTTMessage &message) {
+bool PAHOMQTTConnection::send(const PAHOMQTTMessage &message) {
   cli->publish((mqtt::message_ptr)message);
   return true;
 };
 
-void PAHOMQTTConnection::setWillMessage(const PHAOMQTTMessage &message) {
+void PAHOMQTTConnection::setWillMessage(const PAHOMQTTMessage &message) {
   will = message;
 };
-void PAHOMQTTConnection::disableWillMessage() { will = PHAOMQTTMessage(); };
+void PAHOMQTTConnection::disableWillMessage() { will = PAHOMQTTMessage(); };
 
 void PAHOMQTTConnection::subscribe(const std::string &topic) {
   cli->subscribe(topic, 0);
@@ -143,6 +150,6 @@ void PAHOMQTTConnection::delivery_complete(mqtt::delivery_token_ptr token) {
 };
 void PAHOMQTTConnection::message_arrived(mqtt::const_message_ptr msg) {
   if (onMessageCallback) {
-    onMessageCallback(this, userData, PHAOMQTTMessage(msg));
+    onMessageCallback(this, userData, PAHOMQTTMessage(msg));
   }
 };
