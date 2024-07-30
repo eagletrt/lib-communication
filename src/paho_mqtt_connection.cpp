@@ -83,7 +83,7 @@ bool PAHOMQTTConnection::send(const PAHOMQTTMessage &message) {
     return false;
   }
   if (cli->get_pending_delivery_tokens().size() >=
-      mqttParameters.maxPendingMessages) {
+      mqttParameters.maxPendingMessages - 1) {
     return false;
   }
   cli->publish((mqtt::message_ptr)message);
