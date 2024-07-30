@@ -58,10 +58,12 @@ PAHOMQTTConnection::getMQTTConnectionParameters() const {
 void PAHOMQTTConnection::connect() {
   status = PAHOMQTTConnectionStatus::CONNECTING;
   cli = std::make_shared<mqtt::async_client>(
-      mqttParameters.uri, "tmp-id", mqtt::create_options(MQTTVERSION_5));
+      mqttParameters.uri, std::to_string(id),
+      mqtt::create_options(MQTTVERSION_5));
   mqtt::connect_options connOpts;
   connOpts.set_clean_session(true);
   connOpts.set_keep_alive_interval(20);
+  connOpts.set_automatic_reconnect(true);
   if (!will.topic.empty()) {
     connOpts.set_will_message((mqtt::message_ptr)will);
   }
