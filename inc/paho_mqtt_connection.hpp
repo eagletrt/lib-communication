@@ -53,6 +53,7 @@ class PAHOMQTTConnectionParameters {
 
   static PAHOMQTTConnectionParameters get_localhost_default();
 
+  size_t maxPendingMessages = 10;
   std::string uri;
   std::string username;
   std::string password;

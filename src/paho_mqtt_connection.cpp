@@ -57,9 +57,11 @@ PAHOMQTTConnection::getMQTTConnectionParameters() const {
 
 void PAHOMQTTConnection::connect() {
   status = PAHOMQTTConnectionStatus::CONNECTING;
-  cli = std::make_shared<mqtt::async_client>(
-      mqttParameters.uri, std::to_string(id),
-      mqtt::create_options(MQTTVERSION_5));
+  mqtt::create_options createOpts = mqtt::create_options(MQTTVERSION_5);
+  createOpts.set_max_buffered_messages(mqttParameters.maxPendingMessages);
+  createOpts.set_send_while_disconnected(false);
+  cli = std::make_shared<mqtt::async_client>(mqttParameters.uri,
+                                             std::to_string(id), createOpts);
   mqtt::connect_options connOpts;
   connOpts.set_clean_session(true);
   connOpts.set_keep_alive_interval(20);
@@ -78,6 +80,10 @@ void PAHOMQTTConnection::disconnect() {
 
 bool PAHOMQTTConnection::send(const PAHOMQTTMessage &message) {
   if (!cli->is_connected()) {
+    return false;
+  }
+  if (cli->get_pending_delivery_tokens().size() >=
+      mqttParameters.maxPendingMessages) {
     return false;
   }
   cli->publish((mqtt::message_ptr)message);
