@@ -86,7 +86,12 @@ bool PAHOMQTTConnection::send(const PAHOMQTTMessage &message) {
       mqttParameters.maxPendingMessages - 1) {
     return false;
   }
-  cli->publish((mqtt::message_ptr)message);
+  try {
+    cli->publish((mqtt::message_ptr)message);
+  } catch (const std::exception &e) {
+    printf("MQTT: got exception in send: %s", e.what());
+    return false;
+  }
   return true;
 };
 
