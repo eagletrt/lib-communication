@@ -19,7 +19,7 @@ include_directories(
   ${CMAKE_CURRENT_LIST_DIR}/external/paho/include
 )
 
-set(PAHO_WITH_SSL ON)
+set(PAHO_WITH_SSL OFF)
 set(PAHO_ENABLE_TESTING OFF)
 set(PAHO_HIGH_PERFORMANCE ON)
 option(PAHO_WITH_MQTT_C "Build Paho C from the internal GIT submodule." TRUE)
