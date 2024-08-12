@@ -89,7 +89,7 @@ bool PAHOMQTTConnection::send(const PAHOMQTTMessage &message) {
   try {
     cli->publish((mqtt::message_ptr)message);
   } catch (const std::exception &e) {
-    printf("MQTT: got exception in send: %s", e.what());
+    printf("MQTT: got exception in send: %s\n", e.what());
     return false;
   }
   return true;
