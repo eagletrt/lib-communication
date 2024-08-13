@@ -2,9 +2,32 @@
 
 #include <assert.h>
 
+#include <sstream>
+
 #include "mqtt/async_client.h"
 
 int PAHOMQTTConnection::instanceCounter = 0;
+
+std::string generateID(int instanceCounter) {
+  auto now = std::chrono::system_clock::now();
+  auto now_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
+  auto epoch = now_ms.time_since_epoch();
+  long long timestamp = epoch.count();
+
+  std::stringstream ss;
+  ss << timestamp << instanceCounter;
+  std::string input = ss.str();
+
+  unsigned long hash = 5381;
+  for (char c : input) {
+    hash = ((hash << 5) + hash) + c;  // hash * 33 + c
+  }
+
+  std::stringstream hashString;
+  hashString << std::hex << hash;
+
+  return hashString.str().substr(0, 30);
+}
 
 PAHOMQTTMessage::PAHOMQTTMessage() : PAHOMQTTMessage("", "", 0, false) {};
 PAHOMQTTMessage::PAHOMQTTMessage(const std::string &topic,
@@ -60,12 +83,13 @@ void PAHOMQTTConnection::connect() {
   mqtt::create_options createOpts = mqtt::create_options(MQTTVERSION_5);
   createOpts.set_max_buffered_messages(mqttParameters.maxPendingMessages);
   createOpts.set_send_while_disconnected(false);
-  cli = std::make_shared<mqtt::async_client>(mqttParameters.uri,
-                                             std::to_string(id), createOpts);
+  cli = std::make_shared<mqtt::async_client>(mqttParameters.uri, generateID(id),
+                                             createOpts);
   mqtt::connect_options connOpts;
   connOpts.set_clean_session(true);
-  connOpts.set_keep_alive_interval(20);
+  connOpts.set_keep_alive_interval(5);
   connOpts.set_automatic_reconnect(true);
+  connOpts.set_max_inflight(mqttParameters.maxPendingMessages);
   if (!will.topic.empty()) {
     connOpts.set_will_message((mqtt::message_ptr)will);
   }
