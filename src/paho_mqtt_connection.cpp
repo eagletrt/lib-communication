@@ -98,11 +98,20 @@ void PAHOMQTTConnection::connect() {
   cli->connect(connOpts);
 };
 void PAHOMQTTConnection::disconnect() {
-  cli->disconnect();
+  if (cli == nullptr) {
+    return;
+  }
+  else {
+    cli->disconnect();
+  }
   status = PAHOMQTTConnectionStatus::DISCONNECTED;
+  cli = nullptr;
 };
 
 bool PAHOMQTTConnection::send(const PAHOMQTTMessage &message) {
+  if (cli == nullptr) {
+    return false;
+  }
   if (!cli->is_connected()) {
     return false;
   }
@@ -125,9 +134,15 @@ void PAHOMQTTConnection::setWillMessage(const PAHOMQTTMessage &message) {
 void PAHOMQTTConnection::disableWillMessage() { will = PAHOMQTTMessage(); };
 
 void PAHOMQTTConnection::subscribe(const std::string &topic, int qos) {
+  if (cli == nullptr) {
+    return;
+  }
   cli->subscribe(topic, qos);
 }
 void PAHOMQTTConnection::unsubscribe(const std::string &topic) {
+  if (cli == nullptr) {
+    return;
+  }
   cli->unsubscribe(topic);
 }
 
@@ -168,6 +183,7 @@ void PAHOMQTTConnection::connection_lost(const std::string &cause) {
   if (onDisconnectCallback) {
     onDisconnectCallback(this, userData);
   }
+  cli = nullptr;
 };
 void PAHOMQTTConnection::delivery_complete(mqtt::delivery_token_ptr token) {};
 void PAHOMQTTConnection::message_arrived(mqtt::const_message_ptr msg) {
