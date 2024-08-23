@@ -2,9 +2,11 @@
 
 #include <assert.h>
 
+#include <functional>
 #include <sstream>
 
 #include "mqtt/async_client.h"
+#include "mqtt/token.h"
 
 int PAHOMQTTConnection::instanceCounter = 0;
 
@@ -88,20 +90,22 @@ void PAHOMQTTConnection::connect() {
   mqtt::connect_options connOpts;
   connOpts.set_clean_session(true);
   connOpts.set_keep_alive_interval(5);
-  connOpts.set_automatic_reconnect(true);
+  connOpts.set_automatic_reconnect(false);
   connOpts.set_max_inflight(mqttParameters.maxPendingMessages);
   if (!will.topic.empty()) {
     connOpts.set_will_message((mqtt::message_ptr)will);
   }
 
   cli->set_callback(*this);
-  cli->connect(connOpts);
+  cli->set_disconnected_handler(std::bind(&PAHOMQTTConnection::on_disconnect,
+                                          this, std::placeholders::_1,
+                                          std::placeholders::_2));
+  cli->connect(connOpts, nullptr, *this);
 };
 void PAHOMQTTConnection::disconnect() {
   if (cli == nullptr) {
     return;
-  }
-  else {
+  } else {
     cli->disconnect();
   }
   status = PAHOMQTTConnectionStatus::DISCONNECTED;
@@ -167,6 +171,12 @@ PAHOMQTTConnectionStatus PAHOMQTTConnection::getStatus() const {
   return status;
 };
 void PAHOMQTTConnection::on_failure(const mqtt::token &tok) {
+  if (tok.get_type() == mqtt::token::CONNECT) {
+    printf("PAHOMQTTConnection: connection failure\n");
+    status = PAHOMQTTConnectionStatus::DISCONNECTED;
+  } else {
+    printf("PAHOMQTTConnection: failure type [%d]\n", tok.get_type());
+  }
   if (onErrorCallback) {
     onErrorCallback(this, userData, tok);
   }
@@ -183,8 +193,15 @@ void PAHOMQTTConnection::connection_lost(const std::string &cause) {
   if (onDisconnectCallback) {
     onDisconnectCallback(this, userData);
   }
-  cli = nullptr;
 };
+
+void PAHOMQTTConnection::on_disconnect(const mqtt::properties &prop,
+                                       mqtt::ReasonCode code) {
+  status = PAHOMQTTConnectionStatus::DISCONNECTED;
+  if (onDisconnectCallback) {
+    onDisconnectCallback(this, userData);
+  }
+}
 void PAHOMQTTConnection::delivery_complete(mqtt::delivery_token_ptr token) {};
 void PAHOMQTTConnection::message_arrived(mqtt::const_message_ptr msg) {
   if (onMessageCallback) {
