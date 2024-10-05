@@ -24,6 +24,7 @@ set(PAHO_ENABLE_TESTING OFF)
 set(PAHO_HIGH_PERFORMANCE ON)
 option(PAHO_WITH_MQTT_C "Build Paho C from the internal GIT submodule." TRUE)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/paho)
+target_compile_options(paho-mqttpp3 PRIVATE -Wno-documentation -Wno-deprecated-declarations)
 
 set(SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/src/connection.cpp
