@@ -32,6 +32,7 @@ set(SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/src/mqtt_connection.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/paho_mqtt_connection.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/connection_manager.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/paho_connection_manager.cpp
 )
 
 get_property(DIRS DIRECTORY ${CMAKE_CURRENT_LIST_DIR} PROPERTY INCLUDE_DIRECTORIES)
