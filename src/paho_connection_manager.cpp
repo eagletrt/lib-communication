@@ -20,11 +20,11 @@ static void connectionThreadFunction() {
   while (connectionThreadRunning.load()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
+    std::unique_lock<std::mutex> lck(connectionMutex);
     auto conns = connections;
     connections.clear();
 
-    std::unique_lock<std::mutex> lck(connectionMutex);
-    for (auto weak_conn : connections) {
+    for (auto weak_conn : conns) {
       if (auto connection = weak_conn.lock()) {
         if (connection->getStatus() == PAHOMQTTConnectionStatus::CONNECTED ||
             connection->getStatus() == PAHOMQTTConnectionStatus::CONNECTING) {
