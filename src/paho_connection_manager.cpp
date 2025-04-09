@@ -15,26 +15,27 @@ std::mutex connectionMutex;
 std::condition_variable connectionCondition;
 std::atomic<bool> connectionThreadRunning = false;
 
+void removeNonValidConnections() {
+  auto it = std::remove_if(
+      connections.begin(), connections.end(),
+      [](const std::weak_ptr<PAHOMQTTConnection> &w) { return w.expired(); });
+  connections.erase(it, connections.end());
+}
+
 static void connectionThreadFunction() {
   connectionThreadRunning = true;
   while (connectionThreadRunning.load()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     std::unique_lock<std::mutex> lck(connectionMutex);
-    for (auto weak_conn : connections) {
+    removeNonValidConnections();
+    for (auto &weak_conn : connections) {
       if (auto connection = weak_conn.lock()) {
         if (connection->getStatus() == PAHOMQTTConnectionStatus::CONNECTED ||
             connection->getStatus() == PAHOMQTTConnectionStatus::CONNECTING) {
           continue;
         }
         connection->connect();
-      } else {
-        auto it = std::remove_if(
-            connections.begin(), connections.end(),
-            [&weak_conn](const std::weak_ptr<PAHOMQTTConnection> &w) {
-              return w.lock() == weak_conn.lock();
-            });
-        connections.erase(it);
       }
     }
   }
@@ -82,7 +83,8 @@ bool removeConnection(std::shared_ptr<PAHOMQTTConnection> connection) {
 
 void connect_all() {
   std::unique_lock<std::mutex> lck(connectionMutex);
-  for (auto weak_conn : connections) {
+  removeNonValidConnections();
+  for (auto &weak_conn : connections) {
     if (auto connection = weak_conn.lock()) {
       connection->connect();
     }
@@ -91,7 +93,7 @@ void connect_all() {
 
 void disconnect_all() {
   std::unique_lock<std::mutex> lck(connectionMutex);
-  for (auto weak_conn : connections) {
+  for (auto &weak_conn : connections) {
     if (auto connection = weak_conn.lock()) {
       connection->disconnect();
     }
