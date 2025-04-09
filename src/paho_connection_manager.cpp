@@ -16,10 +16,9 @@ std::condition_variable connectionCondition;
 std::atomic<bool> connectionThreadRunning = false;
 
 void removeNonValidConnections() {
-  auto it = std::remove_if(
-      connections.begin(), connections.end(),
-      [](const std::weak_ptr<PAHOMQTTConnection> &w) { return w.expired(); });
-  connections.erase(it, connections.end());
+  std::erase_if(connections, [](const std::weak_ptr<PAHOMQTTConnection> &w) {
+    return w.expired();
+  });
 }
 
 static void connectionThreadFunction() {
