@@ -60,9 +60,9 @@ MQTTConnection::MQTTConnection(const MQTTConnectionParameters &parameters_)
 
 MQTTConnection::MQTTConnection(MQTTConnection &&other)
     : Connection(std::move(other)),
+      queueSize(other.queueSize.load()),
       mosq(other.mosq),
-      mqttParameters(std::move(other.mqttParameters)),
-      queueSize(other.queueSize.load()) {
+      mqttParameters(std::move(other.mqttParameters)) {
   // Set the moved-from object's mosq to nullptr to prevent double deletion
   other.mosq = nullptr;
 }

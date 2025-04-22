@@ -49,7 +49,7 @@ bool addConnection(Connection* connection) {
 
 bool removeConnection(Connection* connection) {
   std::unique_lock<std::mutex> lck(connectionMutex);
-  for (int i = 0; i < connections.size(); i++) {
+  for (size_t i = 0; i < connections.size(); i++) {
     if (connections[i] == connection) {
       connections.erase(connections.begin() + i);
       return true;
