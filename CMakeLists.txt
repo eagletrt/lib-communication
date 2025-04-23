@@ -49,6 +49,24 @@ add_library(
     ${SOURCES}
 )
 
+if (NOT WIN32)
+    target_compile_options(${PROJECT_NAME} PRIVATE
+        -O0
+        -g
+        -std=c++2a
+        -DGLEW_STATIC
+        -DNDEBUG
+        -Wall
+        -Wextra
+        -Wpedantic
+        -Wno-unused-parameter
+        -Wno-padded
+        -Wno-error=reorder
+        -Wno-error=unused-function
+        -Wno-error=unused-variable
+    )
+endif()
+
 target_link_libraries(
     ${PROJECT_NAME}
     PUBLIC

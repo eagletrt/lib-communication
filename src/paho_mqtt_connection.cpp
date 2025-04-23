@@ -38,7 +38,7 @@ PAHOMQTTMessage::PAHOMQTTMessage(const std::string &topic,
 PAHOMQTTMessage::PAHOMQTTMessage(const std::string &topic,
                                  const std::string &payload, int qos,
                                  bool retain)
-    : topic(topic), payload(payload), qos(qos), retain(retain) {};
+    : qos(qos), retain(retain), topic(topic), payload(payload) {};
 
 PAHOMQTTConnectionParameters::PAHOMQTTConnectionParameters()
     : uri("mqtt://localhost:1883"),
