@@ -6,8 +6,8 @@ namespace PAHOConnectionManager {
 void start();
 void stop();
 
-bool addConnection(PAHOMQTTConnection *connection);
-bool removeConnection(PAHOMQTTConnection *connection);
+bool addConnection(std::shared_ptr<PAHOMQTTConnection> connection);
+bool removeConnection(std::shared_ptr<PAHOMQTTConnection> connection);
 
 void connect_all();
 void disconnect_all();
