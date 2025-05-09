@@ -106,7 +106,11 @@ void PAHOMQTTConnection::disconnect() {
   if (cli == nullptr) {
     return;
   } else {
-    cli->disconnect();
+    try{
+      cli->disconnect();
+    } catch (std::exception &e) {
+      printf("MQTT: got exception in disconnect: %s\n", e.what());
+    }
   }
   status = PAHOMQTTConnectionStatus::DISCONNECTED;
   cli = nullptr;
