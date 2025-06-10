@@ -14,17 +14,19 @@ std::unique_ptr<std::thread> connectionThread = NULL;
 std::mutex connectionMutex;
 std::condition_variable connectionCondition;
 std::atomic<bool> connectionThreadRunning = false;
+std::atomic<bool> stopped_by_user = false;
 
 void removeNonValidConnections() {
-  std::erase_if(connections, [](const std::weak_ptr<PAHOMQTTConnection> &w) {
-    return w.expired();
-  });
+  std::erase_if(connections, [](const std::weak_ptr<PAHOMQTTConnection> &w) { return w.expired(); });
 }
 
 static void connectionThreadFunction() {
   connectionThreadRunning = true;
   while (connectionThreadRunning.load()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    if (stopped_by_user.load()) {
+      continue;
+    }
 
     std::unique_lock<std::mutex> lck(connectionMutex);
     removeNonValidConnections();
@@ -41,17 +43,14 @@ static void connectionThreadFunction() {
 }
 
 void start() {
-  if (connectionThreadRunning)
-    return;
+  if (connectionThreadRunning) return;
   connectionThread = std::make_unique<std::thread>(connectionThreadFunction);
 }
 
 void stop() {
-  if (!connectionThreadRunning)
-    return;
+  if (!connectionThreadRunning) return;
   connectionThreadRunning = false;
-  if (connectionThread != NULL && connectionThread->joinable())
-    connectionThread->join();
+  if (connectionThread != NULL && connectionThread->joinable()) connectionThread->join();
 }
 
 bool addConnection(std::shared_ptr<PAHOMQTTConnection> connection) {
@@ -81,6 +80,7 @@ bool removeConnection(std::shared_ptr<PAHOMQTTConnection> connection) {
 }
 
 void connect_all() {
+  stopped_by_user.store(false);
   std::unique_lock<std::mutex> lck(connectionMutex);
   removeNonValidConnections();
   for (auto &weak_conn : connections) {
@@ -98,4 +98,9 @@ void disconnect_all() {
     }
   }
 }
-} // namespace PAHOConnectionManager
+
+void disconnect_all_and_idle() {
+  stopped_by_user.store(true);
+  disconnect_all();
+}
+}  // namespace PAHOConnectionManager

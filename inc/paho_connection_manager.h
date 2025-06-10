@@ -11,4 +11,5 @@ bool removeConnection(std::shared_ptr<PAHOMQTTConnection> connection);
 
 void connect_all();
 void disconnect_all();
-}; // namespace PAHOConnectionManager
+void disconnect_all_and_idle();
+};  // namespace PAHOConnectionManager
