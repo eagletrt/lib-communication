@@ -142,16 +142,24 @@ void PAHOMQTTConnection::setWillMessage(const PAHOMQTTMessage &message) {
 void PAHOMQTTConnection::disableWillMessage() { will = PAHOMQTTMessage(); };
 
 void PAHOMQTTConnection::subscribe(const std::string &topic, int qos) {
-  if (cli == nullptr) {
+  if (cli == nullptr || status != PAHOMQTTConnectionStatus::CONNECTED) {
     return;
   }
-  cli->subscribe(topic, qos);
+  try {
+    cli->subscribe(topic, qos);
+  } catch (const std::exception &e) {
+    printf("PAHOMQTTConnection: got exception in subscribe: %s\n", e.what());
+  }
 }
 void PAHOMQTTConnection::unsubscribe(const std::string &topic) {
-  if (cli == nullptr) {
+  if (cli == nullptr || status != PAHOMQTTConnectionStatus::CONNECTED) {
     return;
   }
-  cli->unsubscribe(topic);
+  try {
+    cli->unsubscribe(topic);
+  } catch (const std::exception &e) {
+    printf("PAHOMQTTConnection: got exception in unsubscribe: %s\n", e.what());
+  }
 }
 
 void PAHOMQTTConnection::setUserData(void *userData) {
