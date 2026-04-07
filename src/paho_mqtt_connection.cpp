@@ -92,6 +92,13 @@ void PAHOMQTTConnection::connect() {
   connOpts.set_keep_alive_interval(5);
   connOpts.set_automatic_reconnect(false);
   connOpts.set_max_inflight(mqttParameters.maxPendingMessages);
+
+  if (!mqttParameters.username.empty()){
+    connOpts.set_user_name(mqttParameters.username);
+  }
+  if (!mqttParameters.password.empty()){
+    connOpts.set_password(mqttParameters.password);
+  }
   if (!will.topic.empty()) {
     connOpts.set_will_message((mqtt::message_ptr)will);
   }
