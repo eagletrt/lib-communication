@@ -111,7 +111,7 @@ class PAHOMQTTConnection : public virtual mqtt::callback,
  private:
   int id;
   static int instanceCounter;
-  PAHOMQTTConnectionStatus status;
+  std::atomic<PAHOMQTTConnectionStatus> status{PAHOMQTTConnectionStatus::DISCONNECTED};
 
   PAHOMQTTMessage will;
   PAHOMQTTConnectionParameters mqttParameters;
