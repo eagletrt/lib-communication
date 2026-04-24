@@ -94,10 +94,10 @@ void PAHOMQTTConnection::connect() {
   createOpts.set_send_while_disconnected(false);
 
   std::string safeUri = mqttParameters.uri;
-  /*if(safeUri.find("mqtts://") == 0){
+  if(safeUri.find("mqtts://") == 0){
     safeUri.replace(0, 8, "ssl://");
     std::cout << "Auto-corrected URI to: " << safeUri << std::endl;
-  }*/
+  }
 
   cli = std::make_shared<mqtt::async_client>(safeUri, generateID(id), createOpts);
   mqtt::connect_options connOpts;
