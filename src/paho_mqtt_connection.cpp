@@ -129,15 +129,14 @@ void PAHOMQTTConnection::connect() {
   cli->set_callback(*this);
   cli->set_disconnected_handler(std::bind(&PAHOMQTTConnection::on_disconnect, this, std::placeholders::_1, std::placeholders::_2));
   try {
-      std::cout << "Sending MQTT Connect request to EMQX..." << std::endl;
+      //std::cout << "Sending MQTT Connect request to EMQX..." << std::endl;
       cli->connect(connOpts, nullptr, *this); 
       
   } catch (const mqtt::exception& exc) {
-      std::cerr << "\n=== MQTT CONNECTION REJECTED ===" << std::endl;
+      std::cerr << "\nMQTT CONNECTION REJECTED" << std::endl;
       std::cerr << "Reason Code: " << exc.get_reason_code() << std::endl;
       std::cerr << "Message: " << exc.get_message() << std::endl;
       std::cerr << "What: " << exc.what() << std::endl;
-      std::cerr << "================================\n" << std::endl;
   }
 };
 
@@ -223,7 +222,7 @@ PAHOMQTTConnectionStatus PAHOMQTTConnection::getStatus() const {
   return status.load();
 };
 void PAHOMQTTConnection::on_failure(const mqtt::token &tok) {
-    std::cerr << "\n=== ASYNC CONNECTION REJECTED ===" << std::endl;
+    std::cerr << "\nASYNC CONNECTION REJECTED" << std::endl;
     
     // The token contains the exact reason the broker dropped you
     std::cerr << "Return Code: " << tok.get_return_code() << std::endl;
@@ -231,13 +230,10 @@ void PAHOMQTTConnection::on_failure(const mqtt::token &tok) {
     if (tok.get_reason_code() != 0) {
         std::cerr << "MQTT v5 Reason Code: " << tok.get_reason_code() << std::endl;
     }
-    
-    //std::cerr << "Message: " << tok.get_message() << std::endl;
-    std::cerr << "=================================\n" << std::endl;
     status = PAHOMQTTConnectionStatus::DISCONNECTED;
 };
 void PAHOMQTTConnection::on_success(const mqtt::token &tok) {
-    std::cout << "\n=== MQTT SUCCESSFULLY CONNECTED! ===" << std::endl;
+    std::cout << "\nMQTT SUCCESSFULLY CONNECTED!" << std::endl;
     status = PAHOMQTTConnectionStatus::CONNECTED;
 };
 void PAHOMQTTConnection::connected(const std::string &cause) {
@@ -256,7 +252,7 @@ void PAHOMQTTConnection::connection_lost(const std::string &cause) {
 void PAHOMQTTConnection::on_disconnect(const mqtt::properties &prop,
                                        mqtt::ReasonCode code) {
   status = PAHOMQTTConnectionStatus::DISCONNECTED;
-  std::cerr << "\n=== MQTT DISCONNECTED ===" << std::endl;
+  std::cerr << "\nMQTT DISCONNECTED" << std::endl;
   std::cerr << "Reason Code: " << code << std::endl;
   if (onDisconnectCallback) {
     onDisconnectCallback(this, userData);
