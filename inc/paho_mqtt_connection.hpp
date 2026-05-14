@@ -72,7 +72,7 @@ class PAHOMQTTConnection : public virtual mqtt::callback, public virtual mqtt::i
  public:
   PAHOMQTTConnection();
   PAHOMQTTConnection(const PAHOMQTTConnectionParameters &parameters);
-  PAHOMQTTConnection(const PAHOMQTTConnection &other) = default;
+  PAHOMQTTConnection(const PAHOMQTTConnection &other) = delete;
   ~PAHOMQTTConnection();
 
   int getID() const;
