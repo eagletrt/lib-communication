@@ -32,12 +32,9 @@ std::string generateID(int instanceCounter) {
 }
 
 PAHOMQTTMessage::PAHOMQTTMessage() : PAHOMQTTMessage("", "", 0, false) {};
-PAHOMQTTMessage::PAHOMQTTMessage(const std::string &topic,
-                                 const std::string &payload)
+PAHOMQTTMessage::PAHOMQTTMessage(const std::string &topic, const std::string &payload)
     : PAHOMQTTMessage(topic, payload, 0, false) {};
-PAHOMQTTMessage::PAHOMQTTMessage(const std::string &topic,
-                                 const std::string &payload, int qos,
-                                 bool retain)
+PAHOMQTTMessage::PAHOMQTTMessage(const std::string &topic, const std::string &payload, int qos, bool retain)
     : qos(qos), retain(retain), topic(topic), payload(payload) {};
 
 PAHOMQTTConnectionParameters::PAHOMQTTConnectionParameters()
@@ -52,39 +49,29 @@ PAHOMQTTConnectionParameters::PAHOMQTTConnectionParameters()
 
 PAHOMQTTConnectionParameters::~PAHOMQTTConnectionParameters() {};
 
-PAHOMQTTConnectionParameters
-PAHOMQTTConnectionParameters::get_localhost_default() {
+PAHOMQTTConnectionParameters PAHOMQTTConnectionParameters::get_localhost_default() {
   return PAHOMQTTConnectionParameters();
 };
 
-PAHOMQTTConnection::PAHOMQTTConnection()
-    : PAHOMQTTConnection(
-          PAHOMQTTConnectionParameters::get_localhost_default()) {};
-PAHOMQTTConnection::PAHOMQTTConnection(
-    const PAHOMQTTConnectionParameters &parameters)
-    : status(PAHOMQTTConnectionStatus::DISCONNECTED),
-      mqttParameters(parameters) {
+PAHOMQTTConnection::PAHOMQTTConnection() : PAHOMQTTConnection(PAHOMQTTConnectionParameters::get_localhost_default()) {};
+PAHOMQTTConnection::PAHOMQTTConnection(const PAHOMQTTConnectionParameters &parameters) : mqttParameters(parameters) {
   instanceCounter++;
   id = instanceCounter;
+  status.store(PAHOMQTTConnectionStatus::DISCONNECTED);
 };
 PAHOMQTTConnection::~PAHOMQTTConnection() {};
 
 int PAHOMQTTConnection::getID() const { return id; }
 
-void PAHOMQTTConnection::setConnectionParameters(
-    const PAHOMQTTConnectionParameters &parameters) {
+void PAHOMQTTConnection::setConnectionParameters(const PAHOMQTTConnectionParameters &parameters) {
   mqttParameters = parameters;
 };
-const PAHOMQTTConnectionParameters &
-PAHOMQTTConnection::getMQTTConnectionParameters() const {
-  return mqttParameters;
-};
+const PAHOMQTTConnectionParameters &PAHOMQTTConnection::getMQTTConnectionParameters() const { return mqttParameters; };
 
 void PAHOMQTTConnection::connect() {
-  if(status == PAHOMQTTConnectionStatus::CONNECTING){
+  if (status == PAHOMQTTConnectionStatus::CONNECTING) {
     return;
-  }
-  else if(status == PAHOMQTTConnectionStatus::CONNECTED){
+  } else if (status == PAHOMQTTConnectionStatus::CONNECTED) {
     return;
   }
   status = PAHOMQTTConnectionStatus::CONNECTING;
@@ -94,7 +81,7 @@ void PAHOMQTTConnection::connect() {
   createOpts.set_send_while_disconnected(false);
 
   std::string safeUri = mqttParameters.uri;
-  if(safeUri.find("mqtts://") == 0){
+  if (safeUri.find("mqtts://") == 0) {
     safeUri.replace(0, 8, "ssl://");
     std::cout << "Auto-corrected URI to: " << safeUri << std::endl;
   }
@@ -103,40 +90,41 @@ void PAHOMQTTConnection::connect() {
   mqtt::connect_options connOpts;
 
   connOpts.set_mqtt_version(MQTTVERSION_5);
-  
+
   connOpts.set_clean_session(true);
   connOpts.set_keep_alive_interval(60);
   connOpts.set_automatic_reconnect(false);
   connOpts.set_max_inflight(mqttParameters.maxPendingMessages);
 
-  if (!mqttParameters.username.empty()){
+  if (!mqttParameters.username.empty()) {
     connOpts.set_user_name(mqttParameters.username);
   }
-  if (!mqttParameters.password.empty()){
+  if (!mqttParameters.password.empty()) {
     connOpts.set_password(mqttParameters.password);
   }
   if (!will.topic.empty()) {
     connOpts.set_will_message((mqtt::message_ptr)will);
   }
-  if(mqttParameters.tls) {
-     mqtt::ssl_options sslOpts;
-     sslOpts.set_trust_store(mqttParameters.cafile);
-     //sslOpts.set_key_store(mqttParameters.certfile);
-     //sslOpts.set_private_key(mqttParameters.keyfile);
-     connOpts.set_ssl(sslOpts);
+  if (mqttParameters.tls) {
+    mqtt::ssl_options sslOpts;
+    sslOpts.set_trust_store(mqttParameters.cafile);
+    // sslOpts.set_key_store(mqttParameters.certfile);
+    // sslOpts.set_private_key(mqttParameters.keyfile);
+    connOpts.set_ssl(sslOpts);
   }
 
   cli->set_callback(*this);
-  cli->set_disconnected_handler(std::bind(&PAHOMQTTConnection::on_disconnect, this, std::placeholders::_1, std::placeholders::_2));
+  cli->set_disconnected_handler(
+      std::bind(&PAHOMQTTConnection::on_disconnect, this, std::placeholders::_1, std::placeholders::_2));
   try {
-      //std::cout << "Sending MQTT Connect request to EMQX..." << std::endl;
-      cli->connect(connOpts, nullptr, *this); 
-      
-  } catch (const mqtt::exception& exc) {
-      std::cerr << "\nMQTT CONNECTION REJECTED" << std::endl;
-      std::cerr << "Reason Code: " << exc.get_reason_code() << std::endl;
-      std::cerr << "Message: " << exc.get_message() << std::endl;
-      std::cerr << "What: " << exc.what() << std::endl;
+    // std::cout << "Sending MQTT Connect request to EMQX..." << std::endl;
+    cli->connect(connOpts, nullptr, *this);
+
+  } catch (const mqtt::exception &exc) {
+    std::cerr << "\nMQTT CONNECTION REJECTED" << std::endl;
+    std::cerr << "Reason Code: " << exc.get_reason_code() << std::endl;
+    std::cerr << "Message: " << exc.get_message() << std::endl;
+    std::cerr << "What: " << exc.what() << std::endl;
   }
 };
 
@@ -144,7 +132,7 @@ void PAHOMQTTConnection::disconnect() {
   if (cli == nullptr) {
     return;
   } else {
-    try{
+    try {
       cli->disconnect();
     } catch (std::exception &e) {
       printf("MQTT: got exception in disconnect: %s\n", e.what());
@@ -161,8 +149,7 @@ bool PAHOMQTTConnection::send(const PAHOMQTTMessage &message) {
   if (!cli->is_connected()) {
     return false;
   }
-  if (cli->get_pending_delivery_tokens().size() >=
-      mqttParameters.maxPendingMessages - 1) {
+  if (cli->get_pending_delivery_tokens().size() >= mqttParameters.maxPendingMessages - 1) {
     return false;
   }
   try {
@@ -174,9 +161,7 @@ bool PAHOMQTTConnection::send(const PAHOMQTTMessage &message) {
   return true;
 };
 
-void PAHOMQTTConnection::setWillMessage(const PAHOMQTTMessage &message) {
-  will = message;
-};
+void PAHOMQTTConnection::setWillMessage(const PAHOMQTTMessage &message) { will = message; };
 void PAHOMQTTConnection::disableWillMessage() { will = PAHOMQTTMessage(); };
 
 void PAHOMQTTConnection::subscribe(const std::string &topic, int qos) {
@@ -201,40 +186,27 @@ void PAHOMQTTConnection::unsubscribe(const std::string &topic) {
   }
 }
 
-void PAHOMQTTConnection::setUserData(void *userData) {
-  this->userData = userData;
-}
-void PAHOMQTTConnection::setOnConnectCallback(on_connect_callback callback) {
-  onConnectCallback = callback;
-}
-void PAHOMQTTConnection::setOnDisconnectCallback(
-    on_disconnect_callback callback) {
-  onDisconnectCallback = callback;
-}
-void PAHOMQTTConnection::setOnMessageCallback(on_message_callback callback) {
-  onMessageCallback = callback;
-}
-void PAHOMQTTConnection::setOnErrorCallback(on_error_callback callback) {
-  onErrorCallback = callback;
-}
+void PAHOMQTTConnection::setUserData(void *userData) { this->userData = userData; }
+void PAHOMQTTConnection::setOnConnectCallback(on_connect_callback callback) { onConnectCallback = callback; }
+void PAHOMQTTConnection::setOnDisconnectCallback(on_disconnect_callback callback) { onDisconnectCallback = callback; }
+void PAHOMQTTConnection::setOnMessageCallback(on_message_callback callback) { onMessageCallback = callback; }
+void PAHOMQTTConnection::setOnErrorCallback(on_error_callback callback) { onErrorCallback = callback; }
 
-PAHOMQTTConnectionStatus PAHOMQTTConnection::getStatus() const {
-  return status.load();
-};
+PAHOMQTTConnectionStatus PAHOMQTTConnection::getStatus() const { return status.load(); };
 void PAHOMQTTConnection::on_failure(const mqtt::token &tok) {
-    std::cerr << "\nASYNC CONNECTION REJECTED" << std::endl;
-    
-    // The token contains the exact reason the broker dropped you
-    std::cerr << "Return Code: " << tok.get_return_code() << std::endl;
-    
-    if (tok.get_reason_code() != 0) {
-        std::cerr << "MQTT v5 Reason Code: " << tok.get_reason_code() << std::endl;
-    }
-    status = PAHOMQTTConnectionStatus::DISCONNECTED;
+  std::cerr << "\nASYNC CONNECTION REJECTED" << std::endl;
+
+  // The token contains the exact reason the broker dropped you
+  std::cerr << "Return Code: " << tok.get_return_code() << std::endl;
+
+  if (tok.get_reason_code() != 0) {
+    std::cerr << "MQTT v5 Reason Code: " << tok.get_reason_code() << std::endl;
+  }
+  status = PAHOMQTTConnectionStatus::DISCONNECTED;
 };
 void PAHOMQTTConnection::on_success(const mqtt::token &tok) {
-    std::cout << "\nMQTT SUCCESSFULLY CONNECTED!" << std::endl;
-    status = PAHOMQTTConnectionStatus::CONNECTED;
+  std::cout << "\nMQTT SUCCESSFULLY CONNECTED!" << std::endl;
+  status = PAHOMQTTConnectionStatus::CONNECTED;
 };
 void PAHOMQTTConnection::connected(const std::string &cause) {
   status = PAHOMQTTConnectionStatus::CONNECTED;
@@ -249,8 +221,7 @@ void PAHOMQTTConnection::connection_lost(const std::string &cause) {
   }
 };
 
-void PAHOMQTTConnection::on_disconnect(const mqtt::properties &prop,
-                                       mqtt::ReasonCode code) {
+void PAHOMQTTConnection::on_disconnect(const mqtt::properties &prop, mqtt::ReasonCode code) {
   status = PAHOMQTTConnectionStatus::DISCONNECTED;
   std::cerr << "\nMQTT DISCONNECTED" << std::endl;
   std::cerr << "Reason Code: " << code << std::endl;

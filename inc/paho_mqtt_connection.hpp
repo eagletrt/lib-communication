@@ -15,15 +15,12 @@ class PAHOMQTTMessage {
   PAHOMQTTMessage();
   ~PAHOMQTTMessage() = default;
   PAHOMQTTMessage(const mqtt::message_ptr &msg)
-      : PAHOMQTTMessage(msg->get_topic(), msg->to_string(), msg->get_qos(),
-                        msg->is_retained()) {};
+      : PAHOMQTTMessage(msg->get_topic(), msg->to_string(), msg->get_qos(), msg->is_retained()) {};
   PAHOMQTTMessage(const mqtt::const_message_ptr &msg)
-      : PAHOMQTTMessage(msg->get_topic(), msg->to_string(), msg->get_qos(),
-                        msg->is_retained()) {};
+      : PAHOMQTTMessage(msg->get_topic(), msg->to_string(), msg->get_qos(), msg->is_retained()) {};
   PAHOMQTTMessage(const PAHOMQTTMessage &other) = default;
   PAHOMQTTMessage(const std::string &topic, const std::string &payload);
-  PAHOMQTTMessage(const std::string &topic, const std::string &payload, int qos,
-                  bool retain);
+  PAHOMQTTMessage(const std::string &topic, const std::string &payload, int qos, bool retain);
 
   explicit operator mqtt::message_ptr() const {
     mqtt::message_ptr msg = mqtt::make_message(topic, payload);
@@ -66,18 +63,12 @@ class PAHOMQTTConnectionParameters {
 
 enum class PAHOMQTTConnectionStatus { CONNECTED, CONNECTING, DISCONNECTED };
 
-typedef void (*on_connect_callback)(PAHOMQTTConnection *connection,
-                                    void *userData);
-typedef void (*on_disconnect_callback)(PAHOMQTTConnection *connection,
-                                       void *userData);
-typedef void (*on_message_callback)(PAHOMQTTConnection *connection,
-                                    void *userData,
-                                    const PAHOMQTTMessage &message);
-typedef void (*on_error_callback)(PAHOMQTTConnection *connection,
-                                  void *userData, const mqtt::token &tok);
+typedef void (*on_connect_callback)(PAHOMQTTConnection *connection, void *userData);
+typedef void (*on_disconnect_callback)(PAHOMQTTConnection *connection, void *userData);
+typedef void (*on_message_callback)(PAHOMQTTConnection *connection, void *userData, const PAHOMQTTMessage &message);
+typedef void (*on_error_callback)(PAHOMQTTConnection *connection, void *userData, const mqtt::token &tok);
 
-class PAHOMQTTConnection : public virtual mqtt::callback,
-                           public virtual mqtt::iaction_listener {
+class PAHOMQTTConnection : public virtual mqtt::callback, public virtual mqtt::iaction_listener {
  public:
   PAHOMQTTConnection();
   PAHOMQTTConnection(const PAHOMQTTConnectionParameters &parameters);
@@ -111,7 +102,7 @@ class PAHOMQTTConnection : public virtual mqtt::callback,
  private:
   int id;
   static int instanceCounter;
-  std::atomic<PAHOMQTTConnectionStatus> status{PAHOMQTTConnectionStatus::DISCONNECTED};
+  std::atomic<PAHOMQTTConnectionStatus> status;
 
   PAHOMQTTMessage will;
   PAHOMQTTConnectionParameters mqttParameters;
