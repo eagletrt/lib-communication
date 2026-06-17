@@ -25,7 +25,13 @@ set(PAHO_ENABLE_TESTING OFF)
 set(PAHO_HIGH_PERFORMANCE ON)
 option(PAHO_WITH_MQTT_C "Build Paho C from the internal GIT submodule." TRUE)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/paho)
-target_compile_options(paho-mqttpp3 PRIVATE -w)
+if(TARGET paho-mqttpp3)
+    target_compile_options(paho-mqttpp3 PRIVATE -w)
+endif()
+
+if(TARGET paho-mqttpp3-static)
+    target_compile_options(paho-mqttpp3-static PRIVATE -w)
+endif()
 
 set(SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/src/connection.cpp
@@ -68,21 +74,35 @@ if (NOT WIN32)
 endif()
 
 find_package(OpenSSL REQUIRED)
-target_link_libraries(
-    ${PROJECT_NAME}
-    PUBLIC
-    paho-mqttpp3
-    paho-mqtt3as
-    OpenSSL::SSL
-    OpenSSL::Crypto
-)
+if(TARGET paho-mqttpp3-static)
+    target_link_libraries(
+        ${PROJECT_NAME}
+        PUBLIC
+        paho-mqttpp3-static
+        paho-mqtt3c-static
+        OpenSSL::SSL
+        OpenSSL::Crypto
+    )
+else()
+    target_link_libraries(
+        ${PROJECT_NAME}
+        PUBLIC
+        paho-mqttpp3
+        paho-mqtt3as
+        OpenSSL::SSL
+        OpenSSL::Crypto
+    )
+endif()
 
 if (APPLE)
     target_link_libraries(${PROJECT_NAME} PUBLIC PkgConfig::Mosquitto)
 endif ()
 
 if(NOT APPLE)
-    target_link_libraries(${PROJECT_NAME} PUBLIC mosquitto)
+    find_package(mosquitto CONFIG REQUIRED)
+    
+    target_link_libraries(${PROJECT_NAME} PUBLIC ${MOSQUITTO_LIBRARIES})
+    target_include_directories(${PROJECT_NAME} PUBLIC ${MOSQUITTO_INCLUDE_DIRS})
 endif()
 
 if(TEST)

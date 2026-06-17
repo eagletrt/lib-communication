@@ -3,15 +3,22 @@
 #include <mosquitto.h>
 #include <mutex>
 #include <string>
+#include <cstdio>
+#include <cstdlib>
 
 int MQTTConnection::mqttInstances = 0;
 
-#define MQTT_ERROR(inst, err, message)                         \
-  if (inst->onErrorCallback) {                                 \
-    char *err_msg = NULL;                                      \
-    asprintf(&err_msg, message "%s", mosquitto_strerror(err)); \
-    inst->onErrorCallback(inst->userData, inst->id, err_msg);  \
-    free(err_msg);                                             \
+#define MQTT_ERROR(inst, err, message)                                     \
+  if (inst->onErrorCallback) {                                             \
+    int len = snprintf(nullptr, 0, message "%s", mosquitto_strerror(err)); \
+    if (len >= 0) {                                                        \
+      char *err_msg = (char *)malloc(len + 1);                             \
+      if (err_msg) {                                                       \
+        snprintf(err_msg, len + 1, message "%s", mosquitto_strerror(err)); \
+        inst->onErrorCallback(inst->userData, inst->id, err_msg);          \
+        free(err_msg);                                                     \
+      }                                                                    \
+    }                                                                      \
   }
 
 MQTTMessage::MQTTMessage() : Message() {
