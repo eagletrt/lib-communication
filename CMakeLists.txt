@@ -99,8 +99,6 @@ if (APPLE)
 endif ()
 
 if(NOT APPLE)
-    find_package(mosquitto CONFIG REQUIRED)
-    
     target_link_libraries(${PROJECT_NAME} PUBLIC ${MOSQUITTO_LIBRARIES})
     target_include_directories(${PROJECT_NAME} PUBLIC ${MOSQUITTO_INCLUDE_DIRS})
 endif()
