@@ -1,5 +1,8 @@
 #pragma once
 
+#include <atomic>
+#include <chrono>
+#include <cstdint>
 #include <memory>
 #include <queue>
 #include <string>
@@ -90,6 +93,22 @@ class PAHOMQTTConnection : public virtual mqtt::callback, public virtual mqtt::i
 
   PAHOMQTTConnectionStatus getStatus() const;
 
+  // Whether the broker has stopped answering a connection the socket still
+  // reports as up: a message published at QoS 1 or 2 has waited longer than
+  // `timeout` for its acknowledgement. paho's keepalive cannot see this for a
+  // client that keeps publishing, since it only pings after keepAlive seconds
+  // with nothing sent, and a link that died without a reset (an address change
+  // on wifi or 4G, a NAT dropping the flow) then looks connected until TCP
+  // gives up, a quarter of an hour later on Linux. Only as good as the QoS 1
+  // traffic the owner sends: with none, it never reports a stall.
+  bool isStalled(std::chrono::milliseconds timeout) const;
+
+  // Drops the current client and connects a new one, whatever the status says.
+  // For a stalled connection: the new client is created before the old one is
+  // released, so paho's shared threads are not torn down and rebuilt between
+  // the two, which disconnect() would do for the last client left.
+  void restart();
+
   void subscribe(const std::string &topic, int qos = 0);
   void unsubscribe(const std::string &topic);
 
@@ -104,16 +123,24 @@ class PAHOMQTTConnection : public virtual mqtt::callback, public virtual mqtt::i
   static int instanceCounter;
   std::atomic<PAHOMQTTConnectionStatus> status;
 
+  // Oldest QoS 1/2 publish still waiting for the broker, in steady-clock
+  // milliseconds; cleared by any acknowledgement. Written by send() and by
+  // paho's callback thread.
+  std::atomic<bool> awaitingAck{false};
+  std::atomic<int64_t> awaitingAckSinceMs{0};
+
   PAHOMQTTMessage will;
   PAHOMQTTConnectionParameters mqttParameters;
 
   std::queue<PAHOMQTTMessage> sendQueue;
 
-  void *userData;
-  on_connect_callback onConnectCallback;
-  on_disconnect_callback onDisconnectCallback;
-  on_message_callback onMessageCallback;
-  on_error_callback onErrorCallback;
+  // Null until set: they are only tested for null before the call, and paho
+  // calls connection_lost on its own thread whether or not the owner set one.
+  void *userData = nullptr;
+  on_connect_callback onConnectCallback = nullptr;
+  on_disconnect_callback onDisconnectCallback = nullptr;
+  on_message_callback onMessageCallback = nullptr;
+  on_error_callback onErrorCallback = nullptr;
 
   // paho
   std::shared_ptr<mqtt::async_client> cli;

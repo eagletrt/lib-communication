@@ -87,6 +87,8 @@ void PAHOMQTTConnection::connect() {
     return;
   }
   status = PAHOMQTTConnectionStatus::CONNECTING;
+  // Whatever the old client was waiting for goes with it.
+  awaitingAck = false;
 
   mqtt::create_options createOpts = mqtt::create_options(MQTTVERSION_5);
   createOpts.set_max_buffered_messages(mqttParameters.maxPendingMessages);
@@ -98,8 +100,6 @@ void PAHOMQTTConnection::connect() {
     std::cout << "Auto-corrected URI to: " << safeUri << std::endl;
   }
 
-  cli =
-      std::make_shared<mqtt::async_client>(safeUri, generateID(id), createOpts);
   mqtt::connect_options connOpts;
 
   connOpts.set_mqtt_version(MQTTVERSION_5);
@@ -126,11 +126,15 @@ void PAHOMQTTConnection::connect() {
     connOpts.set_ssl(sslOpts);
   }
 
-  cli->set_callback(*this);
-  cli->set_disconnected_handler(std::bind(&PAHOMQTTConnection::on_disconnect,
-                                          this, std::placeholders::_1,
-                                          std::placeholders::_2));
   try {
+    // Inside the try as well: creating the client throws too, on a URI paho
+    // does not accept.
+    cli = std::make_shared<mqtt::async_client>(safeUri, generateID(id),
+                                               createOpts);
+    cli->set_callback(*this);
+    cli->set_disconnected_handler(std::bind(&PAHOMQTTConnection::on_disconnect,
+                                            this, std::placeholders::_1,
+                                            std::placeholders::_2));
     // std::cout << "Sending MQTT Connect request to EMQX..." << std::endl;
     cli->connect(connOpts, nullptr, *this);
 
@@ -139,8 +143,27 @@ void PAHOMQTTConnection::connect() {
     std::cerr << "Reason Code: " << exc.get_reason_code() << std::endl;
     std::cerr << "Message: " << exc.get_message() << std::endl;
     std::cerr << "What: " << exc.what() << std::endl;
+    // No token was issued, so neither on_success nor on_failure will come:
+    // left at CONNECTING, the owner would never try again.
+    status = PAHOMQTTConnectionStatus::DISCONNECTED;
   }
 };
+
+void PAHOMQTTConnection::restart() {
+  status = PAHOMQTTConnectionStatus::DISCONNECTED;
+  connect();
+}
+
+static int64_t steadyMilliseconds() {
+  return std::chrono::duration_cast<std::chrono::milliseconds>(
+             std::chrono::steady_clock::now().time_since_epoch())
+      .count();
+}
+
+bool PAHOMQTTConnection::isStalled(std::chrono::milliseconds timeout) const {
+  return status == PAHOMQTTConnectionStatus::CONNECTED && awaitingAck &&
+         steadyMilliseconds() - awaitingAckSinceMs > timeout.count();
+}
 
 void PAHOMQTTConnection::disconnect() {
   if (cli == nullptr) {
@@ -169,6 +192,10 @@ bool PAHOMQTTConnection::send(const PAHOMQTTMessage &message) {
   }
   try {
     cli->publish((mqtt::message_ptr)message);
+    if (message.qos > 0 && !awaitingAck) {
+      awaitingAckSinceMs = steadyMilliseconds();
+      awaitingAck = true;
+    }
   } catch (const std::exception &e) {
     static int n = 2;
     static int max = 2;
@@ -267,7 +294,12 @@ void PAHOMQTTConnection::on_disconnect(const mqtt::properties &prop,
     onDisconnectCallback(this, userData);
   }
 }
-void PAHOMQTTConnection::delivery_complete(mqtt::delivery_token_ptr token) {};
+void PAHOMQTTConnection::delivery_complete(mqtt::delivery_token_ptr token) {
+  // Called for QoS 1 and 2 only, once the broker has acknowledged: proof that
+  // it is still at the other end.
+  (void)token;
+  awaitingAck = false;
+};
 void PAHOMQTTConnection::message_arrived(mqtt::const_message_ptr msg) {
   if (onMessageCallback) {
     onMessageCallback(this, userData, PAHOMQTTMessage(msg));
