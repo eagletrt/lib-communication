@@ -3,7 +3,9 @@
 #include "connection.h"
 
 #include <atomic>
+#include <chrono>
 #include <mosquitto.h>
+#include <string>
 
 class MQTTMessage : public Message {
 public:

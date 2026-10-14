@@ -1,7 +1,9 @@
 #include "connection_manager.h"
 
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
+#include <memory>
 #include <mutex>
 #include <thread>
 #include <vector>
