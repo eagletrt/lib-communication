@@ -8,8 +8,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 option(TEST "Build test" OFF)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(Mosquitto IMPORTED_TARGET libmosquitto REQUIRED)
+if(APPLE AND TARGET unofficial::mosquitto::mosquitto)
+    set(MOSQUITTO_LINK_TARGET unofficial::mosquitto::mosquitto)
+else()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(Mosquitto IMPORTED_TARGET libmosquitto REQUIRED)
+    set(MOSQUITTO_LINK_TARGET PkgConfig::Mosquitto)
+endif()
 
 include_directories(
     SYSTEM
@@ -92,7 +97,7 @@ else()
     )
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC PkgConfig::Mosquitto)
+target_link_libraries(${PROJECT_NAME} PUBLIC ${MOSQUITTO_LINK_TARGET})
 
 if(TEST)
     add_executable(test_1 test/main.cpp)
