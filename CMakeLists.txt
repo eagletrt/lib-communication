@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 option(TEST "Build test" OFF)
 
-if(APPLE AND TARGET unofficial::mosquitto::mosquitto)
+if(TARGET unofficial::mosquitto::mosquitto)
     set(MOSQUITTO_LINK_TARGET unofficial::mosquitto::mosquitto)
 else()
     find_package(PkgConfig REQUIRED)
